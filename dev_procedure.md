@@ -258,7 +258,7 @@ register_tortoise(
 from fastapi import FastAPI
 from tortoise.contrib.fastapi import register_tortoise
 # models.pyからモデルやPydanticモデルをインポート
-from models import Player_Pydantic, Player_PydanticIn ...
+from models import Player, Player_Pydantic, Player_PydanticIn ...
 
 app = FastAPI()
 
@@ -324,8 +324,7 @@ aync def create_xxx(xxx: Xxx_PydanticIn):
     xxx_obj = await Xxx.create(**xxx.dict(exclude_unset=True))
 
     # 2. 保存されたデータをID付きのPydanticモデル形式で返す
-    response = await Xxx_Pydantic.from_tortoise_orm(player_obj)
-    return {"status": "ok", "data": response}
+    return await Xxx_Pydantic.from_tortoise_orm(player_obj)
 ```
 
 ### exclude_unset=Trueとは
@@ -362,3 +361,40 @@ FastAPIとTortoise ORMは、この「効率的な待ち方」が得意なので�
 * **IDの確定:** データベースが自動で割り振った id を取り込んで、Pydanticモデルにセットする。
 
 * **整形:** 設定したスキーマに合わせて、不要な情報を削ぎ落とす。
+
+## GET - Read
+### Lisrインポート
+```python
+from typing import List
+```
+
+### 例
+```python
+@app.get("/players", response_model=List[Player_Pydantic])
+async def get_players():
+    # Player.all() で全データを取得し、Pydanticモデルのリストに変換
+    return await Player_Pydantic.from_queryset(Player.all())
+```
+
+### Player_Pydantic.from_queryset(Player.all())について
+
+####　Player.all()はクエリの作成
+
+これは Tortoise ORM に対する命令です。
+
+* 発行されるSQL: 裏側で SELECT * FROM players; というSQL文を生成しています。
+* 状態: この時点ではまだデータベースには命令を飛ばしていません。「全データを取る準備ができた」という予約の状態（クエリセット）です
+
+#### Player_Pydantic.from_queryset(...) （実行と変換）
+
+これが Tortoise ORM の非常に便利な「合わせ技」です。
+
+* 実行: ここで初めて await（または内部的な実行）を伴い、データベースにクエリを投げます。
+* 変換: データベースから返ってきた「生の行データ（オブジェクト）」を、自動的に Player_Pydantic という「APIで返せる形」に変換して、さらにそれを List（配列） に詰め込んでくれます。
+
+#### なぜ from_tortoise_ormじゃないか
+* from_tortoise_orm:　1つのデータを変換するとき
+* from_queryset:　たくさんのデータ(クエリ結果)を変換するとき
+
+### 確認
+uvicornで実行して動作確認しよう
