@@ -29,3 +29,16 @@ class SessionInterval(models.Model):
 
     class Meta:
         table = "session_intervals"
+
+
+# Player用
+Player_Pydantic = pydantic_model_creator(Player, name="Player")
+Player_PydanticIn = pydantic_model_creator(Player, name="PlayerIn", exclude_readonly=True)
+
+# Session用
+Session_Pydantic = pydantic_model_creator(Session, name="Session")
+Session_PydanticIn = pydantic_model_creator(Session, name="SessionIn", exclude_readonly=True)
+
+# Interval用
+Interval_Pydantic = pydantic_model_creator(SessionInterval, name="Interval")
+Interval_PydanticIn = pydantic_model_creator(SessionInterval, name="IntervalIn", exclude_readonly=True)

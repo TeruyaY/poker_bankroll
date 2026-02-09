@@ -143,14 +143,14 @@ git branch -M main
 git push -u origin main
 ```
 
-## データベースの設計と作成
-### インポート
+# データベースの設計と作成
+## インポート
 ```python
 from tortoise import fields, models
 from tortoise.contrib.pydantic import pydantic_model_creator
 ```
 
-### DBモデルの作成
+## DBモデルの作成
 ```python
 from tortoise import fields, models
 from tortoise.contrib.pydantic import pydantic_model_creator
@@ -193,8 +193,8 @@ class DBモデル名(models.Model):
 4. auto_now_add=True: DatetimeField に追加できる便利な設定で、データが作成された瞬間の時刻を自動で記録してくれます。
 5. 外部キー：Playerが削除されたらそのセッションも消すなら on_delete=fields.CASCADE を追加検討
 
-### Pydantic Modelの作成
-#### Pydantic Modelとは
+## Pydantic Modelの作成
+### Pydantic Modelとは
 一言で言うと、**「データの玄関口でのチェック（バリデーション）」**を担当するモデルです。
 
 * Tortoise（models.py）: 「データベースにどう保存するか」を決める。
@@ -206,7 +206,7 @@ class DBモデル名(models.Model):
 
 * **循環参照エラー:** 「プレイヤー ⇄ セッション」のように親子で繋がっている場合、そのまま返そうとすると無限ループに陥ってエラーになることがあります。
 
-#### 2つのモデル
+### 2つのモデル
 1. 無印のモデル（例: Player）
 * 役割: 「出力（レスポンス）」用
 * 中身: データベースにあるすべての項目（id や、もしあれば created_at など）を含みます。
@@ -217,7 +217,7 @@ class DBモデル名(models.Model):
 * 中身: データベースが自動で決める項目（読み取り専用＝readonly）を除外したものです。
 * 用途: ユーザーから新規登録データを受け取る時に使います。
 
-#### 1つしかなかったら
+### 1つしかなかったら
 例えば、Player を登録するAPIを「無印モデル」だけで作ろうとすると、こうなります。
 
 問題: APIが「新しいプレイヤーを登録するなら id も送ってください」と要求してしまいます。
@@ -226,8 +226,139 @@ class DBモデル名(models.Model):
 
 ここで exclude_readonly=True を指定した In モデルを使うことで、**「id はこっちでやるから、それ以外の名前やメールだけ送ってね」**というスマートな窓口が作れるのです。
 
-#### 例
+### 例
 ```python
 X_Pydantic = pydantic_model_creator(X, name="X")
 X_PydanticIn = pydantic_mdoel_creator(X, name="XIn", exclude_readonly=True)
 ```
+
+## Tortoise ORMの紐づけ設定
+FastAPIとデータベースをつなげよう。
+
+### データベースのURLの設定
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv(".env.back")
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite://db.sqlite3") # なければSQLite
+
+register_tortoise(
+    app,
+    db_url=DATABASE_URL,
+    # ... 他の設定
+)
+```
+
+環境変数からPostgreSQLサーバーにあるデータベースのＵＲＬを取得する。開発段階ではSQLiteで代用。
+
+### 紐づけ
+```python
+from fastapi import FastAPI
+from tortoise.contrib.fastapi import register_tortoise
+# models.pyからモデルやPydanticモデルをインポート
+from models import Player_Pydantic, Player_PydanticIn ...
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Poker Bankroll API is running"}
+
+#.....続いていく
+
+# --- ここが重要：Tortoise ORMの紐付け設定 ---
+register_tortoise(
+    app,
+    db_url=DATABASE_URL,          # データベースファイルの保存先と名前
+    modules={"models": ["models"]},         # モデルが定義されているファイル名
+    generate_schemas=True,                 # 起動時にテーブルがなければ自動作成する
+    add_exception_handlers=True,           # データベース関連のエラーを分かりやすく表示する
+)
+```
+
+### スキーマ
+本番環境で毎回 generate_schemas=True にしておくのは、少し注意が必要です。
+
+* 理由: 本番で稼働中にテーブル構造を少し変えたくなったとき、この設定だけでは「すでにあるデータ」を壊さずに構造を変えることが難しいからです。
+* 本番の理想: Aerich というマイグレーションツールを使い、履歴を管理しながら変更するのがエンジニアの標準的な手法です。
+
+## データベース生成
+```bash
+uvicorn main:app --reload
+```
+db.sqlite3ができる。
+
+.gitignoreに生成されたファイル書き足す
+
+```text
+# SQLite データベース本体
+backend/db.sqlite3
+
+# 前に説明した一時ファイル（WALモード用）もまとめて除外
+backend/db.sqlite3-shm
+backend/db.sqlite3-wal
+```
+
+# バックエンドでCRUD操作
+## エンドポイントとは
+エンドポイント ＝ APIの機能ごとに割り振られた専用URL。
+プログラミングをする時は、「どのURLに、どんな命令（GET/POSTなど）が来たら、どんな処理をするか」をエンドポイントごとに設計していきます。
+
+| メソッド | URL(エンドポイント) | 役割 |
+| --- | --- | --- |
+| GET | /players | プレイヤーの一覧を取得 |
+| POST | /players | 新プレイヤーの登録 |
+| GET | /sessions | セッションの一覧を取得 |
+
+## POST - Create
+
+```python
+from fastapi import HTTPException
+
+@app.post("/xxx", respnse_model=Xxx_Pydantic)
+aync def create_xxx(xxx: Xxx_PydanticIn):
+    # 1. データベースに保存(Xxxオブジェクトを作成)
+    # **xxx.dict()でPydanticモデルを辞書形式に展開して渡す
+    xxx_obj = await Xxx.create(**xxx.dict(exclude_unset=True))
+
+    # 2. 保存されたデータをID付きのPydanticモデル形式で返す
+    response = await Xxx_Pydantic.from_tortoise_orm(player_obj)
+    return {"status": "ok", "data": response}
+```
+
+### exclude_unset=Trueとは
+「ユーザーが実際に送ってきたデータだけを辞書にする」という設定です。
+
+* **なぜ必要か：** Pydanticモデルには「デフォルト値」を設定することがあります。もしこれを使わないと、ユーザーが送っていない項目まで「デフォルト値」としてデータベースに上書きされてしまう可能性があります。
+
+* **効果：** 「送られてきたものだけを更新・登録する」という安全な挙動になります。
+
+### Xxxオブジェクトとは
+**「データベースの1行分を、Pythonのプログラムで扱いやすい『塊』にしたもの」**です。
+
+* データベース: id | name | email というただの文字と数字の並び。
+* Python（オブジェクト）: player.player_name と打てば名前が取れるし、player.save() と打てば保存できる。
+* 役割: データベースの生データを、プログラムが理解できる「意味のある実体」に変換したものがオブジェクトです。
+
+### なぜawait
+
+**「待ち時間に他の仕事ができるようにするため」です。これを非同期処理**と呼びます。
+
+データベースへの読み書きは、コンピュータの計算速度に比べると「めちゃくちゃ時間がかかる作業」です。
+
+* await なし: データベースの返事があるまで、サーバー全体がフリーズして他の人のリクエストを無視します。
+
+* await あり: 「データベースの結果を待っている間、他の人のリクエストもさばいてていいよ！」と指示を出します。
+
+FastAPIとTortoise ORMは、この「効率的な待ち方」が得意なので、大量のアクセスがあってもサクサク動くのです。
+
+### 最後のreturn
+そこで from_tortoise_orm を使うことで、以下の変換を行っています。
+
+* **型変換:** 複雑なオブジェクトから、純粋なデータ（辞書のような形式）へ変換。
+
+* **IDの確定:** データベースが自動で割り振った id を取り込んで、Pydanticモデルにセットする。
+
+* **整形:** 設定したスキーマに合わせて、不要な情報を削ぎ落とす。
