@@ -38,6 +38,20 @@ async def get_players():
     # Player.all() で全データを取得し、Pydanticモデルのリストに変換
     return await Player_Pydantic.from_queryset(Player.all())
 
+# PlayerのDELETE
+@app.delete("/player/{player_id}")
+async def delete_player(player_id: int):
+    # 1. 指定されたIDのプレイヤーを探して削除する
+    # .filter(id=player_id).delete() で一気に削除可能です
+    deleted_count = await Player.filter(id=player_id).delete()
+    
+    # 2. もし削除された件数が0なら、そのIDは存在しないのでエラーを返す
+    if not deleted_count:
+        raise HTTPException(status_code=404, detail=f"Player {player_id} not found")
+    
+    # 3. 削除成功のメッセージを返す
+    return {"status": "ok", "message": f"Deleted player {player_id}"}
+
 # Tortoise ORMの紐付け設定
 register_tortoise(
     app,
