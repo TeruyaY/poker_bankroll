@@ -20,7 +20,7 @@ class Session(models.Model):
     class Meta:
         table = "sessions"
 
-class SessionInterval(models.Model):
+class Interval(models.Model):
     id = fields.IntField(pk=True)
     session = fields.ForeignKeyField('models.Session', related_name='intervals', on_delete=fields.CASCADE)
     timestamp = fields.DatetimeField(description="記録時刻")
@@ -28,7 +28,7 @@ class SessionInterval(models.Model):
     add_on_amount = fields.IntField(default=0, description="バイイン")
 
     class Meta:
-        table = "session_intervals"
+        table = "intervals"
 
 
 # Player用
@@ -40,5 +40,5 @@ Session_Pydantic = pydantic_model_creator(Session, name="Session")
 Session_PydanticIn = pydantic_model_creator(Session, name="SessionIn", exclude_readonly=True)
 
 # Interval用
-Interval_Pydantic = pydantic_model_creator(SessionInterval, name="Interval")
-Interval_PydanticIn = pydantic_model_creator(SessionInterval, name="IntervalIn", exclude_readonly=True)
+Interval_Pydantic = pydantic_model_creator(Interval, name="Interval")
+Interval_PydanticIn = pydantic_model_creator(Interval, name="IntervalIn", exclude_readonly=True)

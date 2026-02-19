@@ -415,3 +415,56 @@ async def delete_player(player_id: int):
     # 3. 削除成功のメッセージを返す
     return {"status": "ok", "message": f"Deleted player {player_id}"}
 ```
+
+## POST 子
+### 例
+```python
+@app.post("/parent/{parent_id}/children", response_mode=Children_Pydantic)
+async def create_children(parent_id:int, children_info: Session_PydanticIn):
+    # 1. check if parent exists (gives 404 error if no parent)
+    parent = await Parent.get(id=parent_id)
+
+    # 2. Create child
+    children_obj = await Children.create(
+        **children_info.dict(exclide_unset=True),
+        parent=parent
+    )
+
+    # 3. 保存したデータのJSON形式を返す
+    return await Children_Pydantic.from_tortoise_orm(parent_obj)
+```
+
+# CORS (Cross-Origin Resource Sharing)
+## なぜ必要
+ブラウザには**「同じオリジン（URLのドメイン・ポート番号）同士でしか通信させない」**という、同一オリジンポリシーという鉄の掟があります。
+
+* React: http://localhost:3000
+
+* FastAPI: http://localhost:8000
+
+ポート番号が違うだけで「別のサイト」とみなされるため、ブラウザが「勝手に別のサーバーのデータを盗もうとしていないか？」と疑って、通信をブロックしてしまうのです。
+
+CORS設定は、バックエンド側から**「このフロントエンド（3000番）からのアクセスは信頼できるから許可してね！」**とブラウザに許可証を出す作業になります。
+
+## 例
+```python
+from fastapi.middleware.cors import CORSMiddleware # インポートが必要
+
+app = FastAPI()
+
+# --- CORS設定の追加 ---
+origins = [
+    "http://localhost:3000", # React(標準)
+    "http://localhost:5173", # Vite(最近の主流)
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      # 許可するオリジンのリスト
+    allow_credentials=True,     # クッキーや認証情報の共有を許すか
+    allow_methods=["*"],        # すべてのメソッド（GET, POST, DELETE等）を許可
+    allow_headers=["*"],        # すべてのヘッダーを許可
+)
+```
+

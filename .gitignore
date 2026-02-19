@@ -17,7 +17,5 @@ frontend/.env.front
 
 # SQLite データベース本体
 backend/db.sqlite3
-
-# 前に説明した一時ファイル（WALモード用）もまとめて除外
 backend/db.sqlite3-shm
 backend/db.sqlite3-wal
