@@ -23,6 +23,7 @@ origins = [
     "http://localhost:3000", # React(標準)
     "http://localhost:5173", # Vite(最近の主流)
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(

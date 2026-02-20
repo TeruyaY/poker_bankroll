@@ -10,7 +10,7 @@ dist/
 # Env
 .env
 backend/.env.back
-frontend/.env.front
+frontend/.env
 
 # OS
 .DS_Store

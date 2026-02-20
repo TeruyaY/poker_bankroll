@@ -468,3 +468,237 @@ app.add_middleware(
 )
 ```
 
+# Frontend準備
+## プロジェクトの作成
+
+現在のダミーのフロントエンドを改名(例：frontend_draft)
+
+```bash
+npm create vite@latest frontend -- --template react
+```
+* Select a framework: React
+* Select a variant: JavaScript
+
+## 初期設定と起動
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+.env.frontと.env.front.exampleをfrontend直下に移動
+
+frontend内の.gitignoreに以下を追加
+
+```text
+# env
+.env
+.env.front
+```
+
+frontend内のREADME.md削除
+
+## axiosのインストール
+```bash
+npm install axios
+```
+
+### axiosのメリット
+fetch よりも axios が好まれる理由は、「気が利く（自動でやってくれることが多い）」 からです。
+
+* JSONへの自動変換: fetch はデータを送受信する際に JSON.stringify() したり response.json() したりする必要がありますが、axios は自動でやってくれます。
+
+* エラーハンドリング: HTTPエラー（404や500など）が起きたとき、fetch はエラーとして扱ってくれませんが、axios は自動で catch ブロックに飛ばしてくれます。
+
+* 書きやすさ: メソッド名（.get, .post, .delete）が直感的です。
+
+## api.jsの作成
+axios の設定を一箇所にまとめた api.js（共通設定ファイル） を作っておくと、将来的にサーバーのURLが変わったときも、このファイルを1箇所直すだけでアプリ全体が更新されます。
+
+frontend/src フォルダの中に api.js というファイルを新規作成し、以下のコードを貼り付けてください。
+
+```JavaScript
+import axios from 'axios';
+
+// 1. axiosの共通設定（インスタンス）を作成
+const api = axios.create({
+  // 環境変数からURLを取得（Viteのルール：import.meta.env）
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// 2. 共通のエラーハンドリング（任意）
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API通信でエラーが発生しました:', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+```
+
+### .envの調整
+1. .env.frontと.env.front.exampleを.envと.env.exampleに変える。
+
+2. .gitignoreも適宜変える。
+3. .envに以下を追加
+
+### App.jsxでの使い方
+```JavaScript
+import api from './api'; // 自分の作った設定を読み込む
+
+// 以前：axios.get('http://localhost:8000/players')
+// これから：
+const response = await api.get('/players'); // baseURLが自動で補完される！
+```
+
+# Frontend基盤構築
+## Appの解説
+### なぜ必要
+普通のHTMLファイルは、一度書いたらその文字は変わりません。しかし、ポーカーアプリでは「登録ボタンを押したらリストが増える」という動きが必要です。
+App 関数は、「今、データがどうなっているか（State）」 を見張り、データが変わった瞬間に 「画面を書き直せ！」 とブラウザに命令を出すために存在しています。
+
+### 3層
+```JavaScript
+function App() {
+  // ①【記憶の層】 (State)
+  // 「今、画面に表示すべきデータは何？」を覚えている場所
+
+  // ②【行動の層】 (Logic / Functions)
+  // 「ボタンが押されたら何をする？」「サーバーからどうやってデータを取る？」を決める場所
+
+  // ③【見た目の層】 (Return / JSX)
+  // 「最終的にどんなHTMLを表示する？」を記述する場所
+}
+```
+
+### App実行の流れ
+App 関数の中で最も重要なのが、「Stateが変わると、関数がもう一度最初から実行される」 という仕組みです。
+
+1. 初期状態: players は空っぽ []。App が動いて「空のリスト」を表示する。
+
+2. 行動: fetchPlayers が動いて、サーバーから3人のデータを持ってきた。
+
+3. 変化: setPlayers(データ) を呼ぶ。すると React が 「あ、データが変わったな！」 と気づく。
+
+4. 再実行 (再レンダリング): React が勝手に App 関数をもう一度実行 する。
+
+5. 最新の状態: 今度は players に3人入っているので、画面に3人の名前が並ぶ。
+
+この「勝手に書き換わる」仕組みこそが、Reactの最大の特徴です。
+
+### useState
+一言で言うと：**「画面上で変化する『今の状態』を、Reactに覚えておいてもらうためのメモ帳」**です。
+
+```JavaScript
+const [abc, setAbc] = useState([]);
+```
+
+* abc は現在の値で今画面に映すべき「結果」。
+
+* setAbc は値を更新する関数でReactに変化を伝える「リモコン」。
+
+#### なぜ関数？
+setAbc(2000) のように関数として実行することで、Reactは内部で以下のような高度な処理を安全に行うことができます。
+
+1. 古い値と新しい値の比較: 「本当に値が変わったかな？ 1000から1000への更新なら、画面を書き換える無駄な仕事はやめよう」と判断して、動作を軽くしてくれます。
+
+2. 更新のタイミング調整: 1秒間に100回更新命令が来ても、Reactが「ちょっと待って、まとめて1回で書き換えるよ」と、パソコンに負担がかからないように整理してくれます。
+
+### useEffect
+Reactの useEffect は、ひと言でいうと 「画面の表示や更新に連動して、裏側でコッソリ別の仕事をさせる予約ボタン」 です。
+
+React初学者が最もつまずきやすい概念ですが、仕組みがわかれば「いつ、何をさせるか」を自由にコントロールできるようになります。
+
+```JavaScript
+useEffect(() => {
+  // ① やりたい仕事（副作用）の中身
+  console.log("仕事中...");
+
+}, [/* ② 実行するタイミングの条件（依存配列） */]);
+```
+
+## プレイヤーの名前リスト表示
+```JavaScript
+import { useState, useEffect } from 'react'
+import api from './api'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
+
+function App() {
+  // ①【記憶の層】 (State)
+  // 「今、画面に表示すべきデータは何？」を覚えている場所
+
+  // ②【行動の層】 (Logic / Functions)
+  // 「ボタンが押されたら何をする？」「サーバーからどうやってデータを取る？」を決める場所
+
+  // ③【見た目の層】 (Return / JSX)
+  // 「最終的にどんなHTMLを表示する？」を記述する場所
+}
+```
+を基に作る。
+
+### 記憶の層
+まずはプレイヤー情報を記憶する
+
+```JavaScript
+const [players, setPlayers] = useState([]);
+```
+
+### 行動の層
+```JavaScript
+useEffect(() => {
+    const loadData = async () => {
+        const response = await api.get('/players');
+        setPlayers(response.data);
+    };
+
+    loadData();
+}, []);
+```
+
+### 見た目の層
+```JavaScript
+return (
+    <div>
+      <h1>プレイヤー一覧</h1>
+      <ul>
+        {/* playersの中身を一つずつ取り出して <li> に変換する */}
+        {players.map(player => (
+            <li key={player.id}>
+            {/* テンプレートリテラルを使うと綺麗に書けます */}
+            <strong>{player.player_name}</strong> ： {player.email}
+            </li>
+        ))}
+      </ul>
+    </div>
+);
+```
+
+### 起動確認
+```bash
+npm run dev
+```
+
+## プレイヤー登録フォームの実装
+
+## セッション登録フォームの実装
+
+## セッション一覧と収支計算
+
+# Frontend構造化とルーティング
+## React Routerの導入
+
+## コンポーネントの分割
+
+# Frontend分析と視覚化
+## グラフライブラリの導入
+
+## 統計情報の表示
+
+# ブラッシュアップ
