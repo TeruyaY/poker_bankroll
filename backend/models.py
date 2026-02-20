@@ -15,6 +15,8 @@ class Session(models.Model):
     date = fields.DateField(description="日付")
     location = fields.CharField(max_length=255, description="場所")
     game_type = fields.CharField(max_length=50, description="ゲーム")
+    buy_in = fields.IntField(default=0, description="バイイン")
+    cash_out= fields.IntField(default=0, description="キャッシュアウト")
     memo = fields.TextField(null=True)
 
     class Meta:
@@ -31,7 +33,7 @@ class Interval(models.Model):
         table = "intervals"
 
 
-# Player用
+# Player用m
 Player_Pydantic = pydantic_model_creator(Player, name="Player")
 Player_PydanticIn = pydantic_model_creator(Player, name="PlayerIn", exclude_readonly=True)
 

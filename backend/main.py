@@ -100,6 +100,16 @@ async def delete_session(session_id: int):
     
     return {"status": "ok", "message": f"Deleted session {session_id}"}
 
+# Session PUT
+@app.put("/session/{session_id}")
+async def update_session(session_id: int, update_info: Session_PydanticIn):
+    session = await Session.get(id=session_id)
+    update_data = update_info.dict(exclude_unset=True)
+
+    session.update_from_dict(update_data)
+
+    await session.save()
+    return await Session_Pydantic.from_tortoise_orm(session)
 
 # Interval POST
 @app.post("/session/{session_id}/interval", response_model=Interval_Pydantic)

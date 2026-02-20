@@ -434,6 +434,29 @@ async def create_children(parent_id:int, children_info: Session_PydanticIn):
     return await Children_Pydantic.from_tortoise_orm(parent_obj)
 ```
 
+## PUT
+### 例
+```Python
+# Session PUT
+@app.put("/session/{session_id}")
+async def update_session(session_id: int, update_info: Session_PydanticIn):
+    # 1. データベースから対象のセッションを取得
+    session = await Session.get(id=session_id)
+    
+    # 2. Pydanticモデルを辞書形式に変換（送られてきた値のみを抽出）
+    update_data = update_info.dict(exclude_unset=True)
+
+    # 3. update_from_dict を使って一括更新
+    session.update_from_dict(update_data)
+
+    # 4. データベースに保存を確定
+    await session.save()
+    
+    # 5. 更新後のデータを返却
+    return await Session_Pydantic.from_tortoise_orm(session)
+```
+
+
 # CORS (Cross-Origin Resource Sharing)
 ## なぜ必要
 ブラウザには**「同じオリジン（URLのドメイン・ポート番号）同士でしか通信させない」**という、同一オリジンポリシーという鉄の掟があります。
@@ -782,12 +805,13 @@ npm install react-router-dom
 ```
 
 ###　main.jsxとApp.jsxの変更
+
 main.jsx
 ```JavaScript
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom' // 追加
-import App from './App'
+import App from './App.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -852,9 +876,16 @@ function PlayerDetail() {
     </div>
   )
 }
+export default PlayerDetail
 ```
 
 useParams は、React Routerが提供する非常に便利な「フック（機能）」で、「URLの中に含まれる動的な値」を、プログラム内で使える変数として取り出すためのツールです。
+
+Homeと同じようにセッション一覧とセッション登録フォームを作成
+
+### SessionDetai.jsxの作成
+
+同様にする
 
 ## コンポーネントの分割
 
