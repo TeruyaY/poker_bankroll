@@ -686,13 +686,175 @@ npm run dev
 ```
 
 ## プレイヤー登録フォームの実装
+### 流れ
+1. 入力: ユーザーがキーボードで文字を打つ。
 
-## セッション登録フォームの実装
+2. 同期: 1文字打つたびに、Reactの useState（メモ帳）が書き換わる。
 
-## セッション一覧と収支計算
+3. 送信: 登録ボタンが押されたら、axios（api.js）を使ってバックエンドにPOSTリクエストを送る。
+
+4. 更新: 登録が成功したら、画面上のリストを最新の状態に更新する。
+
+### 記憶の層
+新たに入力されるプレイヤーの情報を記憶する
+
+```JavaScript
+const [name, setName] = useState('');
+const [email, setEmail] = useState('');
+```
+
+### 行動の層
+フォームのボタンが押された時の機能実装。
+loadPlayersは再利用するためuseEffectの外に。
+
+```JavaScript
+const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+        // バックエンドにデータ送る
+        await api.post('/player', {
+            player_name: name,
+            email: email
+        });
+
+        //　成功したら入力欄を空にする
+        setName('');
+        setEmail('');
+
+        //　リストを最新にする
+        loadPlayers();
+        alert("登録に成功しました！");
+    } catch (error) {
+      console.error("登録失敗:", error);
+      alert("登録に失敗しました。");
+    }
+
+};
+```
+
+* e.preventDefault()：HTMLのボタンを押すとページ全体を再読み込みする習性を抑制する
+* const handleSubmit = async (e) => {}：(e)はfunction(e)の略でhandleSubmitはeを受け取って非同期処理を行う変わらない関数だよと宣言している
+
+### 見た目の層
+
+```JavaScript
+<div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ccc' }}>
+    <h2>プレイヤー新規登録</h2>
+    <form onSubmit={handleSubmit}>
+        <input
+            type="text"
+            placeholder="プレイヤー名"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+        />
+
+        <input
+            type="email"
+            placeholder="メールアドレス"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <button type="submit">登録</button>
+    </form>
+</div>
+```
+
+inputのvalueとonChange
+* value={name}：入力欄の文字の表示はnameというStateと同じにする
+* onChange={(e) => setName(e.target.value)}：入力の瞬間にnameというStateを更新してね
+
+1. 入力: ユーザーがキーボードの「T」を叩く。
+2. 発火: onChange イベントが発生。
+3. 抽出: e.target.value によって、今の入力欄の中身が "T" であることを突き止める。
+4. 更新: setName("T") が実行され、Reactのメモ帳（State）が "T" になる。
+5. 再描画: Stateが変わったので、Reactが App 関数をもう一度実行する。
+6. 反映: value={name} の部分が value={"T"} として描画され、ユーザーの目には「T」と表示される。
+
+** 画面上の入力欄」と「Reactの中の変数」 **を同期させたい!
 
 # Frontend構造化とルーティング
 ## React Routerの導入
+### インストール
+```bash
+npm install react-router-dom
+```
+
+###　main.jsxとApp.jsxの変更
+main.jsx
+```JavaScript
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom' // 追加
+import App from './App'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter> {/* ここで包むのがルール */}
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+)
+```
+
+App.jsx
+```JavaScript
+import { Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import PlayerDetail from './pages/PlayerDetail'
+
+function App() {
+  return (
+    <Routes>
+      {/* 「/」にアクセスしたら Home コンポーネントを表示 */}
+      <Route path="/" element={<Home />} />
+      
+      {/* 「/players/数字」にアクセスしたら PlayerDetail を表示 */}
+      <Route path="/players/:playerId" element={<PlayerDetail />} />
+    </Routes>
+  )
+}
+
+export default App
+```
+
+1.  <BrowserRouter>, <Routes>, <Route>
+これらは3点セットで使います。
+
+* BrowserRouter: 「URLを監視する装置」です。
+
+* Routes: 「この中からURLに合うものを選んでね」という箱です。
+
+* Route: 「もしURLが path と一致したら、element（部品）を表示してね」という指示書です。
+
+2. パスパラメータ :playerId
+URLの中に「穴」を開けておく書き方です。
+この穴に入った値は、移動先のコンポーネントで useParams という魔法を使って取り出すことができます。
+
+### Home.jsxへの引っ越し
+App.jsxの内容をHome.jsxに引っ越す。
+この時Home.jsxはsrc/pages/Home.jsxのようになる。
+
+### PlayerDetail.jsxの作成
+```JavaScript
+// src/pages/PlayerDetail.jsx
+import { useParams } from 'react-router-dom'
+
+function PlayerDetail() {
+  // URLの「:playerId」の部分を抜き出す
+  const { playerId } = useParams();
+
+  return (
+    <div>
+      <h2>プレイヤーID: {playerId} のページ</h2>
+      <p>ここに、このプレイヤー専用のセッション登録フォームを作ります</p>
+    </div>
+  )
+}
+```
+
+useParams は、React Routerが提供する非常に便利な「フック（機能）」で、「URLの中に含まれる動的な値」を、プログラム内で使える変数として取り出すためのツールです。
 
 ## コンポーネントの分割
 
