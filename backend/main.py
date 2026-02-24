@@ -101,8 +101,21 @@ async def delete_session(session_id: int):
     return {"status": "ok", "message": f"Deleted session {session_id}"}
 
 # Session PUT
+from pydantic import BaseModel
+from typing import Optional
+from datetime import date
+
+class SessionUpdate(BaseModel):
+    date: Optional[date] = None
+    location: Optional[str] = None
+    game_type: Optional[str] = None
+    buy_in: Optional[int] = None
+    cash_out: Optional[int] = None
+    duration_hours: Optional[float] = None
+    memo: Optional[str] = None
+
 @app.put("/session/{session_id}")
-async def update_session(session_id: int, update_info: Session_PydanticIn):
+async def update_session(session_id: int, update_info: SessionUpdate):
     session = await Session.get(id=session_id)
     update_data = update_info.dict(exclude_unset=True)
 

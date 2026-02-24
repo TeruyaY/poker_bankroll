@@ -438,8 +438,22 @@ async def create_children(parent_id:int, children_info: Session_PydanticIn):
 ### 例
 ```Python
 # Session PUT
+
+# 更新専用のゆるいルールを作る
+from pydantic import BaseModel
+from typing import Optional
+from datetime import date
+
+class SessionUpdate(BaseModel):
+    date: Optional[date] = None
+    location: Optional[str] = None
+    game_type: Optional[str] = None
+    buy_in: Optional[int] = None
+    cash_out: Optional[int] = None
+    memo: Optional[str] = None
+
 @app.put("/session/{session_id}")
-async def update_session(session_id: int, update_info: Session_PydanticIn):
+async def update_session(session_id: int, update_info: SessionUpdate):
     # 1. データベースから対象のセッションを取得
     session = await Session.get(id=session_id)
     
@@ -886,10 +900,109 @@ Homeと同じようにセッション一覧とセッション登録フォーム�
 ### SessionDetai.jsxの作成
 
 同様にする
+handleSubmitでセッションの更新も行う
+```JavaScript
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-## コンポーネントの分割
+    try {
+      await api.post(`/session/${sessionId}/interval`, {
+        timestamp: timestamp,
+        stack: stack,
+        add_on_amount: add_on_amount
+      });
+
+      // 最新インターバル一覧の取得
+      const response = await api.get(`/intervals`);
+      const latestIntervals = response.data;
+
+      // 計算
+      let totalBuyIn = 0;
+      for (const item of latestIntervals) {
+        totalBuyIn += Number(item.add_on_amount);
+      }
+      const lastStack = latestIntervals[latestIntervals.length - 1].stack;
+
+      console.log("計算対象のデータ:", latestIntervals);
+      console.log("計算されたバイイン:", totalBuyIn);
+
+      // 親アップデート
+      await api.put(`/session/${sessionId}`, {
+        buy_in: totalBuyIn,
+        cash_out: lastStack
+      })
+
+      setTimestamp('');
+      setStack('');
+      setAdd_on_amount('');
+
+      setIntervals(latestIntervals);
+
+      alert("登録に成功しました！");
+    } catch (error) {
+      console.error("登録失敗:", error);
+      alert("登録に失敗しました。");
+    }
+        
+  };
+```
 
 # Frontend分析と視覚化
+## recharts
+```bash
+npm install recharts
+```
+
+## Sessionsに稼働時間を追加
+* models.pyの編集
+* SessionUpdateの編集
+* SessionDetailの編集
+
+## グラフ作成
+
+### Import
+```JavaScript
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+```
+
+### 見た目
+```JavaScript
+      <h2>プレイヤー収支グラフ</h2>
+
+      {/* 2. グラフの表示エリア */}
+      <div style={{ width: '100%', height: 300, backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="hours" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+```
+
+### 行動と記憶
+```JavaScript
+const prepareChartData = () => {
+    let cumulativeProfit = 0;
+    let cumulativeHours = 0;
+
+    return [...sessions].map(s => {
+      cumulativeProfit += (s.cash_out - s.buy_in);
+      cumulativeHours += s.duration_hours; // ここで時間を積み上げる
+      
+      return {
+        hours: cumulativeHours, // 横軸：累計時間
+        profit: cumulativeProfit // 縦軸：累計収支
+      };
+    });
+  };
+
+  const chartData = prepareChartData();
+```
+
 ## グラフライブラリの導入
 
 ## 統計情報の表示

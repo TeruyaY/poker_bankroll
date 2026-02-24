@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import PlayerDetail from './pages/PlayerDetail'
+import SessionDetail from './pages/SessionDetail'
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
       
       {/* 「/players/数字」にアクセスしたら PlayerDetail を表示 */}
       <Route path="/players/:playerId" element={<PlayerDetail />} />
+      <Route path="/sessions/:sessionId" element={<SessionDetail />} />
     </Routes>
   )
 }

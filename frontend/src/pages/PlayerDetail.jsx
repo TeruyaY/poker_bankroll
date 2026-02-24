@@ -2,6 +2,8 @@ import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import api from '../api';
 
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
 
 function PlayerDetail() {
   // URLの「:playerId」の部分を抜き出す
@@ -52,10 +54,47 @@ function PlayerDetail() {
       loadSessions();
   }, []);
 
+  const prepareChartData = () => {
+    let cumulativeProfit = 0;
+    let cumulativeHours = 0;
+
+    const chartData = [{hours: 0, profit: 0}];
+
+    for (const s of [...sessions]) {
+      cumulativeProfit += (s.cash_out - s.buy_in);
+      cumulativeHours += s.duration_hours;
+
+      chartData.push({
+        hours: cumulativeHours,
+        profit: cumulativeProfit,
+        dateL: s.date
+      })
+    }
+
+    return chartData;
+  };
+
+  const chartData = prepareChartData();
+
 
   return (
     <div style={{ padding: '20px'}}>
       <h1>プレイヤーID: {playerId} のページ</h1>
+
+      <h2>プレイヤー収支グラフ</h2>
+
+      {/* 2. グラフの表示エリア */}
+      <div style={{ width: '100%', height: 300, backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="hours" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ccc' }}>
         <h2>セッション登録</h2>
