@@ -1003,73 +1003,61 @@ const prepareChartData = () => {
   const chartData = prepareChartData();
 ```
 
-## グラフライブラリの導入
-
 ## 統計情報の表示
 
+
 # ブラッシュアップ
+## API改善
+* 特定のプレイヤーのセッションのGET
+* 特定のセッションのインターバルのGET
+
 ##
-
+```bash
 npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+```
 
-<div style={{ padding: '20px'}}>
-      <h1>プレイヤーID: {playerId} のページ</h1>
+<Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+  <Typography variant="h4" gutterBottom fontWeight="bold">
+    プレイヤーID: {playerId} のページ
+  </Typography>
 
-      <h2>プレイヤー収支グラフ</h2>
+  {/* 修正ポイント1: alignItems="flex-start" を指定して、高さによる回り込みを防ぐ */}
+  <Grid container spacing={3} alignItems="flex-start">
 
-      {/* 2. グラフの表示エリア */}
-      <div style={{ width: '100%', height: 300, backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
-        <ResponsiveContainer>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="hours" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+    {/* 修正ポイント2: 左側のエリア。 md={8} が 66% を占有する */}
+    <Grid item xs={12} md={8}>
+      <Card sx={{ p: 2 }}>
+        <Typography variant="h6" color="primary" gutterBottom>
+          収支推移 (Bankroll)
+        </Typography>
+        {/* ここは一旦テキストでテスト。これで横に広がればOK */}
+        <Box sx={{ height: 350, bgcolor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          ここにグラフが表示されます（現在テスト中）
+        </Box>
+      </Card>
+    </Grid>
 
-      <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ccc' }}>
-        <h2>セッション登録</h2>
-        <form onSubmit={handleSubmit}>
-          <label>日付</label>
-          <input
-            type="date"
-            placeholder="日付"
-            value={date}
-            onChange={(e) =>setDate(e.target.value)}
-          />
-          <label>場所</label>
-          <input
-            type="text"
-            placeholder="場所"
-            value={location}
-            onChange={(e) =>setLocation(e.target.value)}
-          />
-          <label>ゲームの種類</label>
-          <input
-            type="text"
-            placeholder="NLH1-3"
-            value={game_type}
-            onChange={(e) =>setGame_type(e.target.value)}
-          />
-          <label>メモ</label>
-          <input
-            type="text"
-            placeholder="メモ"
-            value={memo}
-            onChange={(e) =>setMemo(e.target.value)}
-          />
-          <button type="submit">登録</button>
-        </form>
-      </div>
+    {/* 修正ポイント3: 右側のエリア。 md={4} が残りの 33% を占有する */}
+    <Grid item xs={12} md={4}>
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          セッション新規登録
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          {/* TextFieldなどのフォームの中身 */}
+          <TextField fullWidth label="場所" sx={{ mb: 2 }} value={location} onChange={(e) => setLocation(e.target.value)} />
+          {/* ...他の項目... */}
+          <Button type="submit" fullWidth variant="contained" color="success">登録</Button>
+        </Box>
+      </Paper>
+    </Grid>
+
+  </Grid>
+</Container>
 
 
-      <h2>セッション一覧</h2>
-      <ul>
-        {sessions.map(session => (
-            <li key={session.id}>{session.date} {session.location} {session.game_type} {session.buy_in} {session.cash_out}</li>
-        ))}
-      </ul>
-    </div>
+* delete intervals, sessions
+* make clean form
+* make clean graph
+* add prediction
+* make response design

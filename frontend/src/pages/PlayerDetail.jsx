@@ -20,7 +20,7 @@ function PlayerDetail() {
 
   const loadSessions = async () => {
     try {
-      const response = await api.get('/sessions');
+      const response = await api.get(`/player/${playerId}/sessions`);
       setSessions(response.data);
     }  catch(error) {
       console.error("取得失敗:", error);
@@ -62,7 +62,7 @@ function PlayerDetail() {
 
     const chartData = [{hours: 0, profit: 0}];
 
-    for (const s of [...sessions]) {
+    for (const s of sessions) {
       cumulativeProfit += (s.cash_out - s.buy_in);
       cumulativeHours += (s.duration_hours || 0);
 

@@ -2,6 +2,14 @@ import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import api from '../api';
 
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  Container, Grid, Card, Typography, TextField, Button, Box, Paper 
+} from '@mui/material';
+import { 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+} from '@mui/material';
+
 
 function SessionDetail() {
   // URLの「:sessionId」の部分を抜き出す
@@ -15,7 +23,7 @@ function SessionDetail() {
 
   const loadIntervals = async () => {
     try {
-      const response = await api.get('/intervals');
+      const response = await api.get(`/session/${sessionId}/intervals`);
       setIntervals(response.data);
     }  catch(error) {
       console.error("取得失敗:", error);
@@ -33,7 +41,7 @@ function SessionDetail() {
       });
 
       // 最新インターバル一覧の取得
-      const response = await api.get(`/intervals`);
+      const response = await api.get(`/session/${sessionId}/intervals`);
       const latestIntervals = response.data;
 
       // 計算
@@ -84,10 +92,58 @@ function SessionDetail() {
       loadIntervals();
   }, []);
 
+  const prepareChartData = () => {
+    let cumulativeProfit = 0;
+    let cumulativeHours = 0;
+
+    if (intervals.length == 0) {
+      return [{hours: 0, profit: 0}];
+    } else {
+      const chartData = [];
+      let previousTime = new Date(intervals[0].timestamp);
+
+      let cumulativeBuyIn = 0;
+      let cumulativeHours = 0;
+
+      for (const i of [...intervals]) {
+        const currentTime = new Date(i.timestamp);
+        const diffHours = (currentTime - previousTime) / (1000 * 60 * 60);
+
+        cumulativeBuyIn += (i.add_on_amount || 0);
+        cumulativeHours += diffHours;
+
+        previousTime = currentTime;
+
+        chartData.push({
+          hours: Number(cumulativeHours.toFixed(1)),
+          profit: i.stack - cumulativeBuyIn,
+        })
+      }
+
+      return chartData;
+    }
+  };
+
+  const chartData = prepareChartData();
 
   return (
-    <div style={{ padding: '20px'}}>
+    <Container>
       <h1>セッションID: {sessionId} のページ</h1>
+
+      <h2>セッション収支グラフ</h2>
+      
+      {/* 2. グラフの表示エリア */}
+      <div style={{ width: '100%', height: 300, backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ccc' }}>
         <h2>インターバル登録</h2>
@@ -119,12 +175,50 @@ function SessionDetail() {
 
 
       <h2>インターバル一覧</h2>
-      <ul>
-        {intervals.map(interval => (
-            <li key={interval.id}>{interval.timestamp} {interval.stack} {interval.add_on_amount}</li>
-        ))}
-      </ul>
-    </div>
+    
+      <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
+        <Table sx={{ minWidth: 300 }} aria-label="interval table">
+          <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold' }}>時間</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 'bold'}}>スタック</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 'bold'}}>アドオン</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {intervals.map((interval) => {
+              const timeString = new Date(interval.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+              return (
+                <TableRow
+                  key={interval.id}
+                  sx={{
+                    '&:last-child td, &:last-child th': { border: 0 },
+                    '&:hover': { backgroundColor: '#f9f9f9' }
+                  }}
+                >
+                  <TableCell component="th" scope="row">
+                    {timeString}
+                  </TableCell>
+
+                  <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                    {interval.stack.toLocaleString()}
+                  </TableCell>
+                  
+                  <TableCell align="right" sx={{ color: interval.add_on_amount > 0 ? 'success.main' : 'text.secondary' }}>
+                    {interval.add_on_amount > 0 ? `+${interval.add_on_amount.toLocaleString()}` : '-'}
+                  </TableCell>
+
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
+      
   )
 }
 

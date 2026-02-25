@@ -90,6 +90,12 @@ async def create_session(player_id: int, session_info: Session_PydanticIn):
 async def get_sessions():
     return await Session_Pydantic.from_queryset(Session.all())
 
+# Session GET filter by player
+@app.get("/player/{player_id}/sessions", response_model=List[Session_Pydantic])
+async def get_player_sessions(player_id: int):
+    return await Session_Pydantic.from_queryset(Session.filter(player_id=player_id))
+
+
 # Session DELETE
 @app.delete("/session/{session_id}")
 async def delete_session(session_id: int):
@@ -140,6 +146,11 @@ async def create_interval(session_id: int, interval_info: Interval_PydanticIn):
 @app.get("/intervals", response_model=List[Interval_Pydantic])
 async def get_intervals():
     return await Interval_Pydantic.from_queryset(Interval.all())
+
+# Interval GET filter by session
+@app.get("/session/{session_id}/intervals", response_model=List[Interval_Pydantic])
+async def get_session_intervals(session_id):
+    return await Interval_Pydantic.from_queryset(Interval.filter(session_id=session_id))
 
 # Interval DELETE
 @app.delete("/interval/{interval_id}")
