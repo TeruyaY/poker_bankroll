@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react'
 import api from '../api';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+import { 
+  Container, Grid, Card, Typography, TextField, Button, Box, Paper 
+} from '@mui/material';
 
 function PlayerDetail() {
   // URLの「:playerId」の部分を抜き出す
@@ -62,10 +64,10 @@ function PlayerDetail() {
 
     for (const s of [...sessions]) {
       cumulativeProfit += (s.cash_out - s.buy_in);
-      cumulativeHours += s.duration_hours;
+      cumulativeHours += (s.duration_hours || 0);
 
       chartData.push({
-        hours: cumulativeHours,
+        hours: Number(cumulativeHours.toFixed(1)),
         profit: cumulativeProfit,
         dateL: s.date
       })
@@ -78,6 +80,7 @@ function PlayerDetail() {
 
 
   return (
+    
     <div style={{ padding: '20px'}}>
       <h1>プレイヤーID: {playerId} のページ</h1>
 
@@ -87,11 +90,11 @@ function PlayerDetail() {
       <div style={{ width: '100%', height: 300, backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
         <ResponsiveContainer>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="hours" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={2} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -138,7 +141,7 @@ function PlayerDetail() {
             <li key={session.id}>{session.date} {session.location} {session.game_type} {session.buy_in} {session.cash_out}</li>
         ))}
       </ul>
-    </div>
+    </div>    
   )
 }
 
