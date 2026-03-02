@@ -1011,10 +1011,57 @@ const prepareChartData = () => {
 * 特定のプレイヤーのセッションのGET
 * 特定のセッションのインターバルのGET
 
-##
+## Material UIによる見た目改善
+### MUIのインストール
 ```bash
 npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
 ```
+
+### MUIの解説
+#### 基礎部品
+* buttonの代わりにButton
+* inputの代わりにTextField
+* 通常のテキストの代わりにTypograph
+
+### 複合部品
+* Card
+* Table
+* Dialog (Popup)
+
+部品は最初からクリック時の波紋エフェクトやフォーカス時のアニーメーション搭載
+
+### レイアウト：画面の骨組み
+1. Box
+* divの代わり
+2. Stack
+* 1列に並べる箱
+3. Grid
+* 画面の横幅を12分割して、幅を割り振るシステム
+* Responsive UIで大活躍
+
+### スタイリング：sx
+部品に直接スタイルを書き込める
+
+| **p** / **m** | 全方向の余白 | `p: 2` (上下左右に16pxのPadding) |
+| **pt** / **mt** | 上 (Top) | `mt: 4` (上に32pxのMargin) |
+| **pb** / **mb** | 下 (Bottom) | `mb: 1` (下に8pxのMargin) |
+| **px** / **mx** | 左右 (X軸) | `px: 3` (左右に24pxのPadding) |
+| **py** / **my** | 上下 (Y軸) | `my: 2` (上下に16pxのMargin) |
+📋 Copy
+Clear
+Buy Me a Coffee at ko-fi.com
+
+| **width** / **height** | 幅 / 高さ | `width: '100%'`, `height: 300` |
+| **bgcolor** | 背景色 (`backgroundColor`) | `bgcolor: 'primary.main'`, `bgcolor: '#f5f5f5'` |
+| **color** | 文字色 | `color: 'text.secondary'`, `color: 'red'` |
+| **borderRadius** | 角の丸み | `borderRadius: 2` (標準より少し丸くする) |
+| **boxShadow** | 影の濃さ | `boxShadow: 3` (数字が大きいほど影が濃く、浮いて見える) |
+
+| `display: 'flex'` | 中身を並べるモードをオンにする |
+| `flexDirection: 'column'` | 中身を「縦方向」に並べる（デフォルトは横） |
+| `alignItems: 'center'` | 中身を「交差軸の中央」に揃える |
+| `justifyContent: 'space-between'` | 中身を「均等に離して」配置する |
+
 
 <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
   <Typography variant="h4" gutterBottom fontWeight="bold">
