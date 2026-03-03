@@ -1017,28 +1017,84 @@ const prepareChartData = () => {
 npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
 ```
 
+### index.css 書き換え
+```css
+/* index.css */
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* MUIに任せるため、独自の色指定などはすべて削除 */
+```
+
 ### MUIの解説
 #### 基礎部品
 * buttonの代わりにButton
 * inputの代わりにTextField
 * 通常のテキストの代わりにTypograph
+  * <Typography variant="h2">
 
 ### 複合部品
 * Card
-* Table
+* Paper
+* TableContainer, Table
+  * TableContainerはスマホに収まらない表を横スクロールできるようにする箱
+* ResponsiveContainer
+  * 親要素（外側の箱）のサイズをこっそり測って、中のグラフにピクセル数を教えてあげる
 * Dialog (Popup)
 
 部品は最初からクリック時の波紋エフェクトやフォーカス時のアニーメーション搭載
 
 ### レイアウト：画面の骨組み
 1. Box
-* divの代わり
+  * divの代わり
 2. Stack
-* 1列に並べる箱
+  * 1列に並べる箱
 3. Grid
-* 画面の横幅を12分割して、幅を割り振るシステム
-* Responsive UIで大活躍
+  * 画面の横幅を12分割して、幅を割り振るシステム
+  * Responsive UIで大活躍
 
+Container：コンテンツの中央寄せと最大幅の制限をするページの一番外側
+
+例：
+```JavaScript
+{/* 1. まず敷地を決める（画面中央に最大幅lgで配置） */}
+<Container maxWidth="lg">
+
+  {/* 2. 間取りを決める（左右に分割） */}
+  <Grid container spacing={3}>
+    
+    {/* 部屋A（左側: 8/12の幅） */}
+    <Grid size={{ xs:12, md:8}}>
+      <Card>
+        {/* グラフなど */}
+      </Card>
+    </Grid>
+
+    {/* 部屋B（右側: 4/12の幅） */}
+    <Grid size={{ xs:12, md:4}}>
+      <Card>
+        
+        {/* 3. 家具を並べる（入力欄を縦に等間隔で並べる） */}
+        <Stack spacing={2}>
+          <TextField label="場所" />
+          <TextField label="ゲームの種類" />
+          
+          {/* 4. 万能箱で微調整（ボタンを右寄せにするなど） */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button>登録</Button>
+          </Box>
+        </Stack>
+
+      </Card>
+    </Grid>
+
+  </Grid>
+</Container>
+```
 ### スタイリング：sx
 部品に直接スタイルを書き込める
 
@@ -1047,9 +1103,6 @@ npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
 | **pb** / **mb** | 下 (Bottom) | `mb: 1` (下に8pxのMargin) |
 | **px** / **mx** | 左右 (X軸) | `px: 3` (左右に24pxのPadding) |
 | **py** / **my** | 上下 (Y軸) | `my: 2` (上下に16pxのMargin) |
-📋 Copy
-Clear
-Buy Me a Coffee at ko-fi.com
 
 | **width** / **height** | 幅 / 高さ | `width: '100%'`, `height: 300` |
 | **bgcolor** | 背景色 (`backgroundColor`) | `bgcolor: 'primary.main'`, `bgcolor: '#f5f5f5'` |
@@ -1062,45 +1115,37 @@ Buy Me a Coffee at ko-fi.com
 | `alignItems: 'center'` | 中身を「交差軸の中央」に揃える |
 | `justifyContent: 'space-between'` | 中身を「均等に離して」配置する |
 
+### component={}
+```JavaScript
+<TableContainer component={Paper}>
+  <Table>...</Table>
+</TableContainer>
+```
 
-<Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-  <Typography variant="h4" gutterBottom fontWeight="bold">
-    プレイヤーID: {playerId} のページ
-  </Typography>
+横スクロールさせる枠（TableContainer）としての役割を果たしつつ、見た目は影のついた白い台紙（Paper）
 
-  {/* 修正ポイント1: alignItems="flex-start" を指定して、高さによる回り込みを防ぐ */}
-  <Grid container spacing={3} alignItems="flex-start">
+### 補足
+#### Stack内のResponsiveContainer
+Stack は、中身を並べるために内部で display: flex（フレックスボックス）を使っています。
 
-    {/* 修正ポイント2: 左側のエリア。 md={8} が 66% を占有する */}
-    <Grid item xs={12} md={8}>
-      <Card sx={{ p: 2 }}>
-        <Typography variant="h6" color="primary" gutterBottom>
-          収支推移 (Bankroll)
-        </Typography>
-        {/* ここは一旦テキストでテスト。これで横に広がればOK */}
-        <Box sx={{ height: 350, bgcolor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          ここにグラフが表示されます（現在テスト中）
-        </Box>
-      </Card>
-    </Grid>
+1. ResponsiveContainer は「親の高さに合わせて100%に広がるぞ！」と意気込んでいます。
 
-    {/* 修正ポイント3: 右側のエリア。 md={4} が残りの 33% を占有する */}
-    <Grid item xs={12} md={4}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          セッション新規登録
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          {/* TextFieldなどのフォームの中身 */}
-          <TextField fullWidth label="場所" sx={{ mb: 2 }} value={location} onChange={(e) => setLocation(e.target.value)} />
-          {/* ...他の項目... */}
-          <Button type="submit" fullWidth variant="contained" color="success">登録</Button>
-        </Box>
-      </Paper>
-    </Grid>
+2. しかし、親である Stack の中の空間は「中身のサイズに合わせて高さを決めるよ」というルールで動いています。
 
-  </Grid>
-</Container>
+3. 「親の高さが決まらないと広がれないグラフ」vs「中身が広がらないと高さが決まらないStack」 という矛盾（にらみ合い）が発生し、結果として高さが「0」になってグラフが消滅します。
+
+グラフを Box で囲み、**「タイトルの下の残ったスペースを、全部グラフが吸収して広がれ（flexGrow: 1）」**と明示的に命令
+
+#### form, label, input
+
+form: <Box component="form">でOk
+label: TextFieldは中にラベルが内蔵されてる
+input: 
+```JavaScript
+InputLabelProps={{
+    shrink: true,      // 🌟超重要：ラベルが文字と重ならないようにする魔法
+  }}
+```
 
 
 * delete intervals, sessions

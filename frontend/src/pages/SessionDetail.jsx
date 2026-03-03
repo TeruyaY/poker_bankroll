@@ -4,11 +4,26 @@ import api from '../api';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { 
-  Container, Grid, Card, Typography, TextField, Button, Box, Paper 
+  Grid, 
+  Card, 
+  Stack, 
+  Typography, 
+  Box, 
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Button
 } from '@mui/material';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
-} from '@mui/material';
+import { IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+
+
 
 
 function SessionDetail() {
@@ -124,99 +139,145 @@ function SessionDetail() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("このデータを削除してもよろしいですか？")) return;
+
+    try {
+      await api.delete(`/interval/${id}`);
+      loadIntervals();
+    } catch (error) {
+      console.error("削除に失敗しました", error);
+    }
+
+  };
+
   const chartData = prepareChartData();
 
   return (
-    <Container>
-      <h1>セッションID: {sessionId} のページ</h1>
+    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 } }}>
+      <Grid container spacing={3} disableEqualOverflow>
 
-      <h2>セッション収支グラフ</h2>
-      
-      {/* 2. グラフの表示エリア */}
-      <div style={{ width: '100%', height: 300, backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
-        <ResponsiveContainer>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+        <Grid size={{ xs:12, md:12 }}>
+          <Typography variant="h3" sx={{m:3}}>セッションID: {sessionId} のページ</Typography>
+        </Grid>
 
-      <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ccc' }}>
-        <h2>インターバル登録</h2>
-        <form onSubmit={handleSubmit}>
-          <label>時間</label>
-          <input
-            type="datetime-local"
-            placeholder="時間"
-            value={timestamp}
-            onChange={(e) =>setTimestamp(e.target.value)}
-          />
-          <label>スタック</label>
-          <input
-            type="number"
-            placeholder="スタック"
-            value={stack}
-            onChange={(e) =>setStack(Number(e.target.value))}
-          />
-          <label>アドオン額</label>
-          <input
-            type="number"
-            placeholder="0"
-            value={add_on_amount}
-            onChange={(e) =>setAdd_on_amount(Number(e.target.value))}
-          />
-          <button type="submit">登録</button>
-        </form>
-      </div>
+        <Grid size={{ xs:12, md:8 }}>
+          {/* 2. グラフの表示エリア */}
+          <Card sx={{height:400, p: 3}}>
+            <Stack spacing={4} sx={{ height: '100%'}}>
+              <Typography variant="h4">セッション収支グラフ</Typography>
+              <Box sx={{ flexGrow: 1, minHeight: 0}}>
+                <ResponsiveContainer>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </Stack>
+          </Card>
+        </Grid>
 
+        <Grid size={{ xs:12, md:4 }}>
+          <Card sx={{height:400, p:3}}>
+            <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleSubmit} justifyContent="space-between">
+              <Typography variant="h4">インターバル登録</Typography>
+              <TextField
+                type="datetime-local"
+                label="時間"
+                value={timestamp}
+                onChange={(e) =>setTimestamp(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                type="number"
+                label="スタック"
+                placeholder="0"
+                value={stack}
+                onChange={(e) =>setStack(Number(e.target.value))}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                type="number"
+                label="アドオン額"
+                placeholder="0"
+                value={add_on_amount}
+                onChange={(e) =>setAdd_on_amount(Number(e.target.value))}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <Button type="submit">登録</Button>
+            </Stack>
+          </Card>  
+        </Grid>
 
-      <h2>インターバル一覧</h2>
-    
-      <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
-        <Table sx={{ minWidth: 300 }} aria-label="interval table">
-          <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>時間</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold'}}>スタック</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold'}}>アドオン</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
-            </TableRow>
-          </TableHead>
+        <Grid size={{xs:12, md:12}}>
+          <Card sx={{p:3}}>
+            <Typography variant="h4">インターバル一覧</Typography>
+        
+            <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
+              <Table sx={{ minWidth: 300 }} aria-label="interval table">
+                <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>時間</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>スタック</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>アドオン</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
+                  </TableRow>
+                </TableHead>
 
-          <TableBody>
-            {intervals.map((interval) => {
-              const timeString = new Date(interval.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                <TableBody>
+                  {intervals.map((interval) => {
+                    const timeString = new Date(interval.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-              return (
-                <TableRow
-                  key={interval.id}
-                  sx={{
-                    '&:last-child td, &:last-child th': { border: 0 },
-                    '&:hover': { backgroundColor: '#f9f9f9' }
-                  }}
-                >
-                  <TableCell component="th" scope="row">
-                    {timeString}
-                  </TableCell>
+                    return (
+                      <TableRow
+                        key={interval.id}
+                        sx={{
+                          '&:last-child td, &:last-child th': { border: 0 },
+                          '&:hover': { backgroundColor: '#f9f9f9' }
+                        }}
+                      >
+                        <TableCell component="th" scope="row">
+                          {timeString}
+                        </TableCell>
 
-                  <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                    {interval.stack.toLocaleString()}
-                  </TableCell>
-                  
-                  <TableCell align="right" sx={{ color: interval.add_on_amount > 0 ? 'success.main' : 'text.secondary' }}>
-                    {interval.add_on_amount > 0 ? `+${interval.add_on_amount.toLocaleString()}` : '-'}
-                  </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                          {interval.stack.toLocaleString()}
+                        </TableCell>
+                        
+                        <TableCell align="right" sx={{ color: interval.add_on_amount > 0 ? 'success.main' : 'text.secondary' }}>
+                          {interval.add_on_amount > 0 ? `+${interval.add_on_amount.toLocaleString()}` : '-'}
+                        </TableCell>
 
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                        <TableCell align="right">
+                          <IconButton 
+                            aria-label="delete" 
+                            color="error" // 🌟 これで赤くなります
+                            onClick={() => handleDelete(interval.id)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
+        </Grid>
+
+      </Grid>
     </Container>
       
   )
