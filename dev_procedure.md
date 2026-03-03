@@ -1147,6 +1147,20 @@ InputLabelProps={{
   }}
 ```
 
+## リンク遷移
+```JavaScript
+import { Link } from 'react-router-dom';
+import { Button } from '@mui/material';
+
+// componentプロパティに Link を指定し、toでパスを書く
+<Button 
+  component={Link} 
+  to="/sessions" 
+  variant="outlined"
+>
+  一覧に戻る
+</Button>
+```
 
 * delete intervals, sessions
 * make clean form

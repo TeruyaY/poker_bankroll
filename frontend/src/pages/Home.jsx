@@ -1,6 +1,27 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import '../App.css'
+import { Link } from 'react-router-dom';
+
+
+import { 
+  Grid, 
+  Card, 
+  Stack, 
+  Typography, 
+  Box, 
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Button
+} from '@mui/material';
+
 
 function Home() {
   // ①【記憶の層】 (State)
@@ -53,35 +74,91 @@ function Home() {
   // ③【見た目の層】 (Return / JSX)
   // 「最終的にどんなHTMLを表示する？」を記述する場所
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Poker Manager</h1>
+    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 } }}>
+      <Grid container spacing={3} disableEqualOverflow>
 
-      <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ccc' }}>
-        <h2>プレイヤー新規登録</h2>
-        <form onSubmit={handleSubmit}>
-          <input 
-            type="text" 
-            placeholder="プレイヤー名" 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-          />
-          <input 
-            type="email" 
-            placeholder="メールアドレス" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-          />
-          <button type="submit">登録</button>
-        </form>
-      </div>
+        <Grid size={{ xs:12, md:12 }}>
+          <Typography variant="h3" sx={{m:3}}>ポーカー収支管理</Typography>
+        </Grid>
 
-      <h2>プレイヤー一覧</h2>
-      <ul>
-        {players.map(player => (
-          <li key={player.id}>{player.player_name} ({player.email})</li>
-        ))}
-      </ul>
-    </div>
+        <Grid size={{ xs:12, md:12 }}>
+          <Card sx={{height:250, p: 5}}>
+            <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleSubmit} justifyContent="space-between">
+              <Typography variant="h4" sx={{m:3}}>プレイヤー新規登録</Typography>
+                <TextField 
+                  type="text" 
+                  label="プレイヤー名" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  InputLabelProps={{
+                  shrink: true,
+                }}
+                />
+                <TextField
+                  type="email" 
+                  label="メールアドレス" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  InputLabelProps={{
+                  shrink: true,
+                }}
+                />
+                <Button type="submit">登録</Button>
+            </Stack>
+          </Card>
+        </Grid>
+
+        <Grid size={{xs:12, md:12}}>
+          <Card sx={{p:3}}>
+            <Typography variant="h4">プレイヤー一覧</Typography>
+        
+            <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
+              <Table sx={{ minWidth: 300 }} aria-label="interval table">
+                <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>プレイヤー名</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>メール</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {players.map((player) => {
+
+                    return (
+                      <TableRow
+                        key={player.id}
+                        sx={{
+                          '&:last-child td, &:last-child th': { border: 0 },
+                          '&:hover': { backgroundColor: '#f9f9f9' }
+                        }}
+                      >
+                        <TableCell component="th" scope="row">
+                          {player.player_name}
+                        </TableCell>
+
+                        <TableCell align="right">
+                          {player.email}
+                        </TableCell>
+
+                        <TableCell align="right">
+                          <Button
+                            component={Link} 
+                            to={`/players/${player.id}`}
+                          >移動</Button>
+                        </TableCell>
+
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
+        </Grid>
+
+      </Grid>
+    </Container>
   );
 }
 

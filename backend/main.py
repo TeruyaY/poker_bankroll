@@ -115,6 +115,7 @@ class SessionUpdate(BaseModel):
     date: Optional[date] = None
     location: Optional[str] = None
     game_type: Optional[str] = None
+    bb_str: Optional[str] = None
     buy_in: Optional[int] = None
     cash_out: Optional[int] = None
     duration_hours: Optional[float] = None

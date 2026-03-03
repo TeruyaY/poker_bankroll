@@ -15,6 +15,7 @@ class Session(models.Model):
     date = fields.DateField(description="日付")
     location = fields.CharField(max_length=255, description="場所")
     game_type = fields.CharField(max_length=50, description="ゲーム")
+    bb_str = fields.IntField(default=3, description="1BB/STR")
     buy_in = fields.IntField(default=0, description="バイイン")
     cash_out= fields.IntField(default=0, description="キャッシュアウト")
     duration_hours = fields.FloatField(default=0.0, description="稼働時間")
