@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import api from '../api';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   Grid, 
   Card, 
@@ -18,7 +18,8 @@ import {
   TableRow,
   Paper,
   TextField,
-  Button
+  Button,
+  bottomNavigationActionClasses
 } from '@mui/material';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -46,10 +47,17 @@ function PlayerDetail() {
   const [nWinrate95, setNWinrate95] = useState('---');
   const [pWinrate95, setPWinrate95] = useState('---');
   const [probAbove, setProbAbove] = useState('---');
+  const [bbChartData, setBbChartData] = useState([{hands: 0, profit: 0, nError70: 0, pError70: 0, nError95: 0, pError95: 0}]);
+  const [xBbDomain, setXBbDomain] = useState([0,100]);
+  const [xBbTicks, setXBbTicks] = useState([0,50,100]);
+  const [yBbDomain, setYBbDomain] = useState([0,100]);
+  const [yBbTicks, setYBbTicks] = useState([0,50,100]);
   
 
   const z_score70 = 1.036
   const z_score95 = 1.96
+  const hUnit = 100;
+  const resolution = 100;
 
   const loadSessions = async () => {
     try {
@@ -119,10 +127,10 @@ function PlayerDetail() {
     const currentHands = h * hPH;
     if (currentHands <= 0) return; // 0除算防止
 
-    const currentWinrate = (wb / currentHands) * 100;
+    const currentWinrate = (wb / currentHands) * hUnit;
 
     // 3. 統計計算
-    const se = s / Math.sqrt(currentHands / 100);
+    const se = s / Math.sqrt(currentHands / hUnit);
     const error70 = z_score70 * se;
     const error95 = z_score95 * se;
 
@@ -138,6 +146,7 @@ function PlayerDetail() {
     setNWinrate95(Number((currentWinrate-error95).toPrecision(3)));
     setPWinrate95(Number((currentWinrate+error95).toPrecision(3)));
     setProbAbove(Number(prob.toPrecision(3))); 
+    prepareBbChartData(currentWinrate, hPH, s);
 
 
   };
@@ -145,6 +154,7 @@ function PlayerDetail() {
   useEffect(() => {
       loadSessions();
   }, []);
+
 
   const prepareChartData = () => {
     let cumulativeProfit = 0;
@@ -166,24 +176,104 @@ function PlayerDetail() {
     return chartData;
   };
 
-  const prepareBbChartData = () => {
-    let cumulativeProfit = 0;
+  const calculateXAxis = (data) => {
+    const rawValues = [...data.map(d => d.hours), 
+      ...data.map(d => d.hands)];
+    const values = rawValues.filter( v=> typeof v === 'number' && !isNaN(v));
+    return calculateAxis(values);
+  }
+
+  const calculateYAxis = (data) => {
+    const rawValues = [...data.map(d => d.profit), 
+      ...data.map(d => d.nError70), 
+      ...data.map(d => d.pError70),
+      ...data.map(d => d.nError95),
+      ...data.map(d => d.pError95),];
+    const values = rawValues.filter( v=> typeof v === 'number' && !isNaN(v));
+    return calculateAxis(values);
+  }
+
+  const calculateAxis = (values) => {
+    if (!values || values.length === 0) return [[0,100], [0, 50, 100]];
+
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    const range = dataMax - dataMin;
+
+    const roughStep = range / 10;
+
+    const exponent = Math.floor(Math.log10(roughStep));
+    const magnitude = Math.pow(10, exponent);
+
+    const normalizedStep = roughStep / magnitude;
+    let step = 0;
+    if (normalizedStep < 1.5) step = 1 * magnitude;
+    else if (normalizedStep < 3.5) step = 2 * magnitude;
+    else if (normalizedStep < 7.5) step = 5 * magnitude;
+    else step = 10 * magnitude;
+
+    const bottom = Math.floor(dataMin / step) * step;
+    const top = Math.ceil(dataMax / step) * step;
+
+    const ticks = [];
+    for (let val = bottom; val <=top; val += step) {
+      ticks.push(val);
+    }
+
+    return [[bottom, top], ticks];
+  };
+
+  const chartData = prepareChartData();
+  const [xDomain, xTicks] = calculateXAxis(chartData);
+  const [yDomain, yTicks] = calculateYAxis(chartData);
+
+  const prepareCalculation = () => {
+    let cumulativeBb = 0;
     let cumulativeHours = 0;
 
-    const chartData = [{hours: 0, profit: 0}];
+    for (const s of sessions) {
+      cumulativeBb += (s.cash_out - s.buy_in) / s.bb_str;
+      cumulativeHours += (s.duration_hours || 0);
+    }
+
+    return [cumulativeHours, cumulativeBb];
+  };
+
+  const prepareBbChartData = (wr, hPH, std) => {
+    let cumulativeBb = 0;
+    let cumulativeHands = 0;
+
+    const chartData = [{hands: 0, profit: 0}];
 
     for (const s of sessions) {
-      cumulativeProfit += (s.cash_out - s.buy_in) / s.bb_str;
-      cumulativeHours += (s.duration_hours || 0);
+      cumulativeBb += (s.cash_out - s.buy_in) / s.bb_str;
+      cumulativeHands += (s.duration_hours *  hPH || 0);
 
       chartData.push({
-        hours: Number(cumulativeHours.toFixed(1)),
-        profit: cumulativeProfit,
-        dateL: s.date
+        hands: Number(cumulativeHands.toFixed(1)),
+        profit: cumulativeBb
       })
     }
 
-    return [chartData, cumulativeHours, cumulativeProfit];
+    for (let i = 0; i < resolution; i++) {
+      let x = cumulativeHands/resolution * i
+      chartData.push({
+        hands: x,
+        nError70: wr / hUnit * x - z_score70 * std * Math.sqrt(x/hUnit),
+        pError70: wr / hUnit * x + z_score70 * std * Math.sqrt(x/hUnit),
+        nError95: wr / hUnit * x - z_score95 * std * Math.sqrt(x/hUnit),
+        pError95: wr / hUnit * x + z_score95 * std * Math.sqrt(x/hUnit),
+      })
+    }
+
+    setBbChartData(chartData);
+    const [calculatedXDomain, calculatedXTicks] = calculateXAxis(chartData);
+    setXBbDomain(calculatedXDomain);
+    setXBbTicks(calculatedXTicks); 
+    const [calculatedYDomain, calculatedYTicks] = calculateYAxis(chartData);
+    setYBbDomain(calculatedYDomain);
+    setYBbTicks(calculatedYTicks);
+
   };
 
   const handleDelete = async (id) => {
@@ -198,9 +288,7 @@ function PlayerDetail() {
   
   };
 
-  const chartData = prepareChartData();
-
-  const [bbChartData, hours, winBb] = prepareBbChartData();
+  const [hours, winBb] = prepareCalculation();
 
 
   return (
@@ -220,10 +308,10 @@ function PlayerDetail() {
                 <ResponsiveContainer>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
-                      <YAxis />
+                      <XAxis dataKey="hours" type="number" domain={xDomain} ticks={xTicks}/>
+                      <YAxis domain={yDomain} ticks={yTicks} tickFormatter={(val) => val.toLocaleString()}/>
                       <Tooltip />
-                      <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
+                      <Line type="linear" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </Box>
@@ -360,17 +448,22 @@ function PlayerDetail() {
             <Grid container spacing={2}>
 
               <Grid size={{xs:12, md:8}}>
-                <Box sx={{height:400, p: 3}}>
+                <Box sx={{height:550, p: 3}}>
                   <Stack spacing={4} sx={{ height: '100%'}}>
                     <Typography variant="h5">BB/STR収支グラフ</Typography>
                     <Box sx={{ flexGrow: 1, minHeight: 0}}>
                       <ResponsiveContainer>
                         <LineChart data={bbChartData}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
-                            <YAxis />
+                            <XAxis dataKey="hands" type="number" domain={xBbDomain} ticks={xBbTicks} tickFormatter={(val) => val.toLocaleString()}/>
+                            <YAxis domain={yBbDomain} ticks={yBbTicks} tickFormatter={(val) => val.toLocaleString()}/>
                             <Tooltip />
-                            <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
+                            <Legend />
+                            <Line type="linear" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
+                            <Line type="monotone" dataKey="nError70" stroke="#d88884" strokeWidth={3} dot={false} />
+                            <Line type="monotone" dataKey="pError70" stroke="#d88884" strokeWidth={3} dot={false} />
+                            <Line type="monotone" dataKey="nError95" stroke="#84d888" strokeWidth={3} dot={false} />
+                            <Line type="monotone" dataKey="pError95" stroke="#84d888" strokeWidth={3} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </Box>
@@ -379,7 +472,7 @@ function PlayerDetail() {
               </Grid>
 
               <Grid size={{xs:12, md:4}}>
-                <Box sx={{height:400, p:3}}>
+                <Box sx={{height:550, p:3}}>
                   <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleCalculateForm} justifyContent="space-between">
 
                     <TextField
@@ -425,9 +518,9 @@ function PlayerDetail() {
                   <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleCalculateForm} justifyContent="space-between">
                     <Typography variant="h6">プレイ時間: {hours}</Typography>
                     <Typography variant="h6">ハンド数: {hands}</Typography>
-                    <Typography varaint="h6">ウィンレート: {winrate} BB/100</Typography>
-                    <Typography varaint="h6">70%信頼区間: [ {nWinrate70} , {pWinrate70} ] BB/100</Typography>
-                    <Typography varaint="h6">95%信頼区間: [ {nWinrate95} , {pWinrate95} ] BB/100</Typography>
+                    <Typography varaint="h6">ウィンレート: {winrate} BB/{hUnit}</Typography>
+                    <Typography varaint="h6">70%信頼区間: [ {nWinrate70} , {pWinrate70} ] BB/{hUnit}</Typography>
+                    <Typography varaint="h6">95%信頼区間: [ {nWinrate95} , {pWinrate95} ] BB/{hUnit}</Typography>
                     <Typography varaint="h6">真のウィンレートが予想ウィンレートを上回っている確率: {probAbove}</Typography>
                     <Typography varaint="h6">破産確率5%以下にするのに必要な最低バンクロール</Typography>
                   </Stack>
