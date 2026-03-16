@@ -52,12 +52,13 @@ function PlayerDetail() {
   const [xBbTicks, setXBbTicks] = useState([0,50,100]);
   const [yBbDomain, setYBbDomain] = useState([0,100]);
   const [yBbTicks, setYBbTicks] = useState([0,50,100]);
-  
+  const [bacnkrollNeeded, setBankrollNeeded] = useState(0);
 
   const z_score70 = 1.036
   const z_score95 = 1.96
   const hUnit = 100;
   const resolution = 100;
+  const ror=0.05;
 
   const loadSessions = async () => {
     try {
@@ -136,9 +137,14 @@ function PlayerDetail() {
 
     // 4. Zスコアと確率（真のWinrate > 予測値 となる確率）
     const z = (currentWinrate - wp) / se;
-    const prob = 0.5 * (1 + erf(z / Math.sqrt(2)));
+    const prob = 0.5 * (1 + erf(z / Math.sqrt(2))) * 100;
 
-    // 5. 最後にまとめてStateを更新
+    // 5. 必要バンクロール計算
+    let bankroll;
+    if (currentWinrate > 0) bankroll = Math.pow(s, 2) / (2 * currentWinrate) * Math.log(1/ror);
+    else bankroll = '---'
+
+    // 6. 最後にまとめてStateを更新
     setHands(currentHands);
     setWinrate(Number(currentWinrate.toPrecision(3)));
     setNWinrate70(Number((currentWinrate-error70).toPrecision(3)));
@@ -146,8 +152,8 @@ function PlayerDetail() {
     setNWinrate95(Number((currentWinrate-error95).toPrecision(3)));
     setPWinrate95(Number((currentWinrate+error95).toPrecision(3)));
     setProbAbove(Number(prob.toPrecision(3))); 
+    setBankrollNeeded(bankroll);
     prepareBbChartData(currentWinrate, hPH, s);
-
 
   };
 
@@ -273,7 +279,6 @@ function PlayerDetail() {
     const [calculatedYDomain, calculatedYTicks] = calculateYAxis(chartData);
     setYBbDomain(calculatedYDomain);
     setYBbTicks(calculatedYTicks);
-
   };
 
   const handleDelete = async (id) => {
@@ -292,7 +297,7 @@ function PlayerDetail() {
 
 
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 } }}>
+    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 }, pb: 4}}>
       <Grid container spacing={3} disableEqualOverflow>
 
         <Grid size={{ xs:12, md:12 }}>
@@ -387,6 +392,9 @@ function PlayerDetail() {
                     <TableCell sx={{ fontWeight: 'bold' }}>日付</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 'bold'}}>場所</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 'bold'}}>ゲームの種類</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>1BB/STR</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>バイイン額</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>キャッシュアウト額</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 'bold'}}>メモ</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
                   </TableRow>
@@ -409,6 +417,14 @@ function PlayerDetail() {
 
                         <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
                           {session.location.toLocaleString()}
+                        </TableCell>
+
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                          {session.game_type.toLocaleString()}
+                        </TableCell>
+
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                          {session.bb_str.toLocaleString()}
                         </TableCell>
                         
                         <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
@@ -447,6 +463,57 @@ function PlayerDetail() {
             <Typography variant="h4">計算</Typography>
             <Grid container spacing={2}>
 
+              <Grid size={{xs:12, md:4}}>
+                <Box sx={{height:500, p:3}}>
+                  <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleCalculateForm} justifyContent="space-between">
+                    <Typography variant="h5">分析ツール</Typography>
+
+                    <Stack spacing={2}>
+                      <TextField
+                        type="text"
+                        label="標準偏差"
+                        placeholder="100"
+                        value={std}
+                        onChange={(e) =>setStd(e.target.value)}
+                        InputLabelProps={{
+                          shrink: true,
+                        }}
+                      />
+                      <Stack spacing={1}>
+                        <Typography variant="h7">NLH 9-max: 60-80 BB/100</Typography>
+                        <Typography variant="h7">NLH 6-max: 75-120 BB/100</Typography>
+                        <Typography variant="h7">PLO 9-max: 100-140 BB/100</Typography>
+                        <Typography variant="h7">PLO 6-max: 120-160 BB/100</Typography>
+                      </Stack>
+                    </Stack>
+
+                    <TextField
+                      type="text"
+                      label="1時間当たりのハンド数"
+                      placeholder="20-30"
+                      value={handsPH}
+                      onChange={(e) =>setHandsPH(e.target.value)}
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                    />
+
+                    <TextField
+                      type="text"
+                      label="予想ウィンレート"
+                      placeholder="0"
+                      value={winrateP}
+                      onChange={(e) =>setWinrateP(e.target.value)}
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                    />
+                    
+                    <Button type="submit">登録</Button>
+                  </Stack>
+                </Box>
+              </Grid>
+
               <Grid size={{xs:12, md:8}}>
                 <Box sx={{height:550, p: 3}}>
                   <Stack spacing={4} sx={{ height: '100%'}}>
@@ -471,58 +538,65 @@ function PlayerDetail() {
                 </Box>
               </Grid>
 
-              <Grid size={{xs:12, md:4}}>
-                <Box sx={{height:550, p:3}}>
-                  <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleCalculateForm} justifyContent="space-between">
-
-                    <TextField
-                      type="text"
-                      label="標準偏差"
-                      placeholder="3"
-                      value={std}
-                      onChange={(e) =>setStd(e.target.value)}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-
-                    <TextField
-                      type="text"
-                      label="1時間当たりのハンド数"
-                      placeholder="3"
-                      value={handsPH}
-                      onChange={(e) =>setHandsPH(e.target.value)}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-
-                    <TextField
-                      type="text"
-                      label="予想ウィンレート"
-                      placeholder="3"
-                      value={winrateP}
-                      onChange={(e) =>setWinrateP(e.target.value)}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-                    
-                    <Button type="submit">登録</Button>
-                  </Stack>
-                </Box>
-              </Grid>
-
               <Grid size={{xs:12}}>
                 <Box sx={{height:500, p:3}}>
-                  <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleCalculateForm} justifyContent="space-between">
-                    <Typography variant="h6">プレイ時間: {hours}</Typography>
-                    <Typography variant="h6">ハンド数: {hands}</Typography>
-                    <Typography varaint="h6">ウィンレート: {winrate} BB/{hUnit}</Typography>
-                    <Typography varaint="h6">70%信頼区間: [ {nWinrate70} , {pWinrate70} ] BB/{hUnit}</Typography>
-                    <Typography varaint="h6">95%信頼区間: [ {nWinrate95} , {pWinrate95} ] BB/{hUnit}</Typography>
-                    <Typography varaint="h6">真のウィンレートが予想ウィンレートを上回っている確率: {probAbove}</Typography>
-                    <Typography varaint="h6">破産確率5%以下にするのに必要な最低バンクロール</Typography>
+                  <Stack spacing={4} sx={{ height: '100%'}}>
+                    <Typography variant="h5">分析結果</Typography>
+                    <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
+                      <Table sx={{ minWidth: 300 }} aria-label="session statistics table"> 
+                        <TableBody>
+                          {/* プレイ時間 */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>プレイ時間</TableCell>
+                            <TableCell align="right">{hours} 時間</TableCell>
+                          </TableRow>
+
+                          {/* ハンド数 */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>ハンド数</TableCell>
+                            <TableCell align="right">{hands.toLocaleString()} hands</TableCell>
+                          </TableRow>
+
+                          {/* ウィンレート */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>ウィンレート</TableCell>
+                            <TableCell align="right" sx={{ color: winrate >= 0 ? 'success.main' : 'error.main', fontWeight: 'bold' }}>
+                              {winrate} BB/{hUnit}
+                            </TableCell>
+                          </TableRow>
+
+                          {/* 70%信頼区間 */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>70%信頼区間</TableCell>
+                            <TableCell align="right">
+                              [ {nWinrate70} , {pWinrate70} ] <Box component="span" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>BB/{hUnit}</Box>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* 95%信頼区間 */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>95%信頼区間</TableCell>
+                            <TableCell align="right">
+                              [ {nWinrate95} , {pWinrate95} ] <Box component="span" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>BB/{hUnit}</Box>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* 上回っている確率 */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>真のWRが予想を上回る確率</TableCell>
+                            <TableCell align="right">{probAbove}%</TableCell>
+                          </TableRow>
+
+                          {/* 必要最低バンクロール */}
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>必要最低バンクロール (RoB 5%)</TableCell>
+                            <TableCell align="right" sx={{ fontSize: '1.1rem', color: 'primary.main', fontWeight: 'bold' }}>
+                              {bacnkrollNeeded} BB
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </Stack>
                 </Box>
               </Grid>

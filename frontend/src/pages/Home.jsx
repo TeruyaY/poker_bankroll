@@ -74,7 +74,7 @@ function Home() {
   // ③【見た目の層】 (Return / JSX)
   // 「最終的にどんなHTMLを表示する？」を記述する場所
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 } }}>
+    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 }, pb: 4 }}>
       <Grid container spacing={3} disableEqualOverflow>
 
         <Grid size={{ xs:12, md:12 }}>

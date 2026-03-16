@@ -9,9 +9,10 @@ from models import Player, Player_Pydantic, Player_PydanticIn, Session, Session_
 import os
 from dotenv import load_dotenv
 
-load_dotenv(".env.back")
+load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite://db.sqlite3") # なければSQLite
+
 
 # FastAPIのインスタンスを作成
 app = FastAPI()

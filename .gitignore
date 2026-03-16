@@ -1,16 +1,37 @@
-# Python
-.venv/
-__pycache__/
-*.py[cod]
+# --- Backend ---
+backend/.venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/.env
+backend/*.sqlite3*
 
-# Node.js
-node_modules/
-dist/
-
-# Env
-.env
-backend/.env.back
+# --- Frontend ---
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
 frontend/.env
+frontend/.env.*
+frontend/*.local
+# ↓ npmやyarnのエラーログをより詳細にカバー
+frontend/*.log*
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+
+# ↓ VS Code以外のエディタやWindows特有のファイルをカバー
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.DS_Store
+*.sw?
+
+# ↓ Windowsのサムネイルキャッシュ
+Thumbs.db
 
 # OS
 .DS_Store

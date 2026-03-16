@@ -1162,8 +1162,6 @@ import { Button } from '@mui/material';
 </Button>
 ```
 
-* delete intervals, sessions
-* make clean form
-* make clean graph
-* add prediction
-* make response design
+## 分析
+https://www.primedope.com/poker-variance-calculator/
+

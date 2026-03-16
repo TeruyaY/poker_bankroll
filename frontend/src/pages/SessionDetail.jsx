@@ -151,10 +151,59 @@ function SessionDetail() {
 
   };
 
+  const calculateXAxis = (data) => {
+    const rawValues = [...data.map(d => d.hours), 
+      ...data.map(d => d.hands)];
+    const values = rawValues.filter( v=> typeof v === 'number' && !isNaN(v));
+    return calculateAxis(values);
+  };
+
+  const calculateYAxis = (data) => {
+    const rawValues = [...data.map(d => d.profit), 
+      ...data.map(d => d.nError70), 
+      ...data.map(d => d.pError70),
+      ...data.map(d => d.nError95),
+      ...data.map(d => d.pError95),];
+    const values = rawValues.filter( v=> typeof v === 'number' && !isNaN(v));
+    return calculateAxis(values);
+  };
+
+  const calculateAxis = (values) => {
+    if (!values || values.length === 0) return [[0,100], [0, 50, 100]];
+
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    const range = dataMax - dataMin;
+
+    const roughStep = range / 10;
+
+    const exponent = Math.floor(Math.log10(roughStep));
+    const magnitude = Math.pow(10, exponent);
+
+    const normalizedStep = roughStep / magnitude;
+    let step = 0;
+    if (normalizedStep < 1.5) step = 1 * magnitude;
+    else if (normalizedStep < 3.5) step = 2 * magnitude;
+    else if (normalizedStep < 7.5) step = 5 * magnitude;
+    else step = 10 * magnitude;
+
+    const bottom = Math.floor(dataMin / step) * step;
+    const top = Math.ceil(dataMax / step) * step;
+
+    const ticks = [];
+    for (let val = bottom; val <=top; val += step) {
+      ticks.push(val);
+    }
+
+    return [[bottom, top], ticks];
+  };
+
   const chartData = prepareChartData();
+  const [xDomain, xTicks] = calculateXAxis(chartData);
+  const [yDomain, yTicks] = calculateYAxis(chartData);
 
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 } }}>
+    <Container maxWidth="lg" sx={{ px: { xs: 5, md: 7 }, pb: 4 }}>
       <Grid container spacing={3} disableEqualOverflow>
 
         <Grid size={{ xs:12, md:12 }}>
@@ -170,10 +219,10 @@ function SessionDetail() {
                 <ResponsiveContainer>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="hours" type="number" domain={[0, 'dataMax + 1']} tickCount={5}/>
-                      <YAxis />
+                      <XAxis dataKey="hours" type="number" domain={xDomain} ticks={xTicks}/>
+                      <YAxis domain={yDomain} ticks={yTicks} tickFormatter={(val) => val.toLocaleString()}/>
                       <Tooltip />
-                      <Line type="monotone" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
+                      <Line type="linear" dataKey="profit" stroke="#8884d8" strokeWidth={3} dot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </Box>
