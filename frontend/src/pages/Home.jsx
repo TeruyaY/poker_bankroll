@@ -31,7 +31,7 @@ function Home() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
   // ②【行動の層】 (Logic / Functions)
   // 「ボタンが押されたら何をする？」「サーバーからどうやってデータを取る？」を決める場所
   const loadPlayers = async () => {
