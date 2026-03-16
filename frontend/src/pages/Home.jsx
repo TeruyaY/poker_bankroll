@@ -36,6 +36,7 @@ function Home() {
   // 「ボタンが押されたら何をする？」「サーバーからどうやってデータを取る？」を決める場所
   const loadPlayers = async () => {
         try {
+          alert("今読み込んでいるURLはこれです: " + API_URL);
           const response = await api.get('/players');
           setPlayers(response.data);
         }  catch(error) {
