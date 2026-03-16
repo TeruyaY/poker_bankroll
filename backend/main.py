@@ -25,7 +25,7 @@ origins = [
     "http://localhost:5173", # Vite(最近の主流)
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
-    "https://your-app-name.vercel.app",
+    "https://poker-bankroll-ten.vercel.app",
     "https://poker-bankroll-imnmwc0e2-teruyas-projects.vercel.app",
     "https://poker-bankroll-git-main-teruyas-projects.vercel.app",
 ]
