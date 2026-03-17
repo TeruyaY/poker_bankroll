@@ -212,10 +212,10 @@ function SessionDetail() {
 
         <Grid size={{ xs:12, md:8 }}>
           {/* 2. グラフの表示エリア */}
-          <Card sx={{height:400, p: 3}}>
+          <Card sx={{p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column'}}>
             <Stack spacing={4} sx={{ height: '100%'}}>
               <Typography variant="h4">セッション収支グラフ</Typography>
-              <Box sx={{ flexGrow: 1, minHeight: 0}}>
+              <Box sx={{ width: '100%', aspectRatio: { xs: '1 / 1', md: '16 / 9' },  minHeight: 0,}}>
                 <ResponsiveContainer>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -231,7 +231,7 @@ function SessionDetail() {
         </Grid>
 
         <Grid size={{ xs:12, md:4 }}>
-          <Card sx={{height:400, p:3}}>
+          <Card sx={{height:400, p: { xs: 2, md: 3 }}}>
             <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleSubmit} justifyContent="space-between">
               <Typography variant="h4">インターバル登録</Typography>
               <TextField
@@ -268,55 +268,108 @@ function SessionDetail() {
           </Card>  
         </Grid>
 
-        <Grid size={{xs:12, md:12}}>
-          <Card sx={{p:3}}>
-            <Typography variant="h4">インターバル一覧</Typography>
-        
-            <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
+        <Grid size={{ xs: 12, md: 12 }}>
+          <Card sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>インターバル一覧</Typography>
+
+            {/* --- 【1】スマホ用：カード形式リスト (md 未満で表示) --- */}
+            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+              {intervals.length > 0 ? (
+                intervals.map((interval) => {
+                  const timeString = new Date(interval.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                    <Card 
+                      key={interval.id} 
+                      variant="outlined" 
+                      sx={{ mb: 1.5, p: 2, borderRadius: 2 }}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        {/* 左側：時間とラベル */}
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            時間
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                            {timeString}
+                          </Typography>
+                        </Box>
+
+                        {/* 中央：スタック量 */}
+                        <Box textAlign="right" sx={{ flexGrow: 1, mr: 3 }}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            スタック
+                          </Typography>
+                          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                            {interval.stack.toLocaleString()}
+                          </Typography>
+                        </Box>
+
+                        {/* 右側：削除ボタン */}
+                        <IconButton 
+                          color="error" 
+                          onClick={() => handleDelete(interval.id)}
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+
+                      {/* アドオンがある場合のみ下に表示 */}
+                      {interval.add_on_amount > 0 && (
+                        <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed #eee', display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">アドオン追加</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            {interval.add_on_amount.toLocaleString()}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Card>
+                  );
+                })
+              ) : (
+                <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
+                  データがありません
+                </Typography>
+              )}
+            </Box>
+
+            {/* --- 【2】PC用：従来のテーブル形式 (md 以上で表示) --- */}
+            <TableContainer 
+              component={Paper} 
+              sx={{ 
+                display: { xs: 'none', md: 'block' }, 
+                mt: 3, 
+                boxShadow: 2, 
+                borderRadius: 2 
+              }}
+            >
               <Table sx={{ minWidth: 300 }} aria-label="interval table">
-                <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
+                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 'bold' }}>時間</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>スタック</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>アドオン</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>スタック</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>アドオン</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>操作</TableCell>
                   </TableRow>
                 </TableHead>
-
                 <TableBody>
                   {intervals.map((interval) => {
                     const timeString = new Date(interval.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
                     return (
-                      <TableRow
-                        key={interval.id}
-                        sx={{
-                          '&:last-child td, &:last-child th': { border: 0 },
-                          '&:hover': { backgroundColor: '#f9f9f9' }
-                        }}
-                      >
-                        <TableCell component="th" scope="row">
-                          {timeString}
-                        </TableCell>
-
+                      <TableRow key={interval.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                        <TableCell>{timeString}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
                           {interval.stack.toLocaleString()}
                         </TableCell>
-                        
-                        <TableCell align="right" sx={{ color: interval.add_on_amount > 0 ? 'success.main' : 'text.secondary' }}>
-                          {interval.add_on_amount > 0 ? `+${interval.add_on_amount.toLocaleString()}` : '-'}
-                        </TableCell>
-
                         <TableCell align="right">
-                          <IconButton 
-                            aria-label="delete" 
-                            color="error" // 🌟 これで赤くなります
-                            onClick={() => handleDelete(interval.id)}
-                          >
+                          {interval.add_on_amount > 0 ? `${interval.add_on_amount.toLocaleString()}` : '-'}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton color="error" onClick={() => handleDelete(interval.id)}>
                             <DeleteIcon />
                           </IconButton>
                         </TableCell>
-
                       </TableRow>
                     );
                   })}

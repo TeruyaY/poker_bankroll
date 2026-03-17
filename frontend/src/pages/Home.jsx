@@ -81,7 +81,7 @@ function Home() {
         </Grid>
 
         <Grid size={{ xs:12, md:12 }}>
-          <Card sx={{height:250, p: 5}}>
+          <Card sx={{ minHeight: 250, p: { xs: 2, sm: 3, md: 5 } }}>
             <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleSubmit} justifyContent="space-between">
               <Typography variant="h4" sx={{m:3}}>プレイヤー新規登録</Typography>
                 <TextField 
@@ -102,57 +102,83 @@ function Home() {
                   shrink: true,
                 }}
                 />
-                <Button type="submit">登録</Button>
+                <Button type="submit"
+                  variant="contained" 
+                  size="large"
+                  sx={{ mt: 1 }}>登録</Button>
             </Stack>
           </Card>
         </Grid>
 
-        <Grid size={{xs:12, md:12}}>
-          <Card sx={{p:3}}>
-            <Typography variant="h4">プレイヤー一覧</Typography>
-        
-            <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
-              <Table sx={{ minWidth: 300 }} aria-label="interval table">
-                <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
+        <Grid size={{ xs: 12, md: 12 }}>
+          <Card sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>プレイヤー一覧</Typography>
+
+            {/* --- 【1】スマホ用：カード形式リスト (md 未満で表示) --- */}
+            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+              {players.map((player) => (
+                <Card 
+                  key={player.id} 
+                  variant="outlined" 
+                  sx={{ mb: 2, p: 2, borderRadius: 2, backgroundColor: '#fafafa' }}
+                >
+                  <Stack spacing={1}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">プレイヤー名</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{player.player_name}</Typography>
+                    </Box>
+                    
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">メールアドレス</Typography>
+                      <Typography variant="body2">{player.email}</Typography>
+                    </Box>
+
+                    <Button 
+                      fullWidth 
+                      variant="contained" 
+                      component={Link} 
+                      to={`/players/${player.id}`}
+                      size="small"
+                      sx={{ mt: 1 }}
+                    >
+                      詳細・記録へ移動
+                    </Button>
+                  </Stack>
+                </Card>
+              ))}
+            </Box>
+
+            {/* --- 【2】PC用：従来のテーブル形式 (md 以上で表示) --- */}
+            <TableContainer 
+              component={Paper} 
+              sx={{ 
+                display: { xs: 'none', md: 'block' }, // スマホでは消す
+                boxShadow: 2, 
+                borderRadius: 2 
+              }}
+            >
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 'bold' }}>プレイヤー名</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>メール</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>メール</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>操作</TableCell>
                   </TableRow>
                 </TableHead>
-
                 <TableBody>
-                  {players.map((player) => {
-
-                    return (
-                      <TableRow
-                        key={player.id}
-                        sx={{
-                          '&:last-child td, &:last-child th': { border: 0 },
-                          '&:hover': { backgroundColor: '#f9f9f9' }
-                        }}
-                      >
-                        <TableCell component="th" scope="row">
-                          {player.player_name}
-                        </TableCell>
-
-                        <TableCell align="right">
-                          {player.email}
-                        </TableCell>
-
-                        <TableCell align="right">
-                          <Button
-                            component={Link} 
-                            to={`/players/${player.id}`}
-                          >移動</Button>
-                        </TableCell>
-
-                      </TableRow>
-                    );
-                  })}
+                  {players.map((player) => (
+                    <TableRow key={player.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                      <TableCell>{player.player_name}</TableCell>
+                      <TableCell align="right">{player.email}</TableCell>
+                      <TableCell align="right">
+                        <Button component={Link} to={`/players/${player.id}`}>移動</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </TableContainer>
+            
           </Card>
         </Grid>
 

@@ -306,10 +306,10 @@ function PlayerDetail() {
 
         <Grid size={{ xs:12, md:8 }}>
           {/* 2. グラフの表示エリア */}
-          <Card sx={{height:500, p: 3}}>
+          <Card sx={{p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column'}}>
             <Stack spacing={4} sx={{ height: '100%'}}>
               <Typography variant="h4">プレイヤー収支グラフ</Typography>
-              <Box sx={{ flexGrow: 1, minHeight: 0}}>
+              <Box sx={{ width: '100%', aspectRatio: { xs: '1 / 1', md: '16 / 9' },  minHeight: 0,}}>
                 <ResponsiveContainer>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -381,77 +381,117 @@ function PlayerDetail() {
           </Card>  
         </Grid>
 
-        <Grid size={{xs:12, md:12}}>
-          <Card sx={{p:3}}>
-            <Typography variant="h4">セッション一覧</Typography>
-        
-            <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
-              <Table sx={{ minWidth: 300 }} aria-label="session table">
-                <TableHead sx={{ backgroundColor: '#f5f5f5'}}>
+        <Grid size={{ xs: 12, md: 12 }}>
+          <Card sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>セッション一覧</Typography>
+
+            {/* --- 【1】スマホ用：カード形式リスト (md 未満で表示) --- */}
+            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+              {sessions.map((session) => {
+                // 収支計算（簡易）
+                const profit = session.cash_out - session.buy_in;
+                const profitColor = profit >= 0 ? 'success.main' : 'error.main';
+
+                return (
+                  <Card 
+                    key={session.id} 
+                    variant="outlined" 
+                    sx={{ mb: 2, p: 2, borderRadius: 2, borderLeft: `5px solid`, borderLeftColor: profitColor }}
+                  >
+                    <Stack spacing={1.5}>
+                      {/* 1段目：日付と場所 */}
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">日付</Typography>
+                          <Typography variant="body2">{new Date(session.date).toLocaleDateString()}</Typography>
+                        </Box>
+                        <Box textAlign="right">
+                          <Typography variant="caption" color="text.secondary">場所</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{session.location}</Typography>
+                        </Box>
+                      </Box>
+
+                      {/* 2段目：ゲーム情報 */}
+                      <Box display="flex" justifyContent="space-between">
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">種類 / ステークス</Typography>
+                          <Typography variant="body2">{session.game_type} ({session.bb_str})</Typography>
+                        </Box>
+                        <Box textAlign="right">
+                          <Typography variant="caption" color="text.secondary">収支</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 'bold', color: profitColor }}>
+                            {profit > 0 ? `+${profit.toLocaleString()}` : profit.toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* 3段目：操作ボタン */}
+                      <Stack direction="row" spacing={1}>
+                        <Button 
+                          fullWidth 
+                          variant="outlined" 
+                          component={Link} 
+                          to={`/sessions/${session.id}`}
+                          size="small"
+                        >
+                          詳細
+                        </Button>
+                        <IconButton 
+                          color="error" 
+                          onClick={() => handleDelete(session.id)}
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                );
+              })}
+            </Box>
+
+            {/* --- 【2】PC用：テーブル形式 (md 以上で表示) --- */}
+            <TableContainer 
+              component={Paper} 
+              sx={{ 
+                display: { xs: 'none', md: 'block' }, 
+                mt: 3, 
+                boxShadow: 2, 
+                borderRadius: 2,
+                overflowX: 'auto' // はみ出し防止
+              }}
+            >
+              <Table sx={{ minWidth: 800 }} aria-label="session table">
+                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 'bold' }}>日付</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>場所</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>ゲームの種類</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>1BB/STR</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>バイイン額</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>キャッシュアウト額</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>メモ</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold'}}>操作</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>場所</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>種類</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>1BB/STR</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>バイイン</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>キャッシュアウト</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>操作</TableCell>
                   </TableRow>
                 </TableHead>
-
                 <TableBody>
-                  {sessions.map((session) => {
-
-                    return (
-                      <TableRow
-                        key={session.id}
-                        sx={{
-                          '&:last-child td, &:last-child th': { border: 0 },
-                          '&:hover': { backgroundColor: '#f9f9f9' }
-                        }}
-                      >
-                        <TableCell component="th" scope="row">
-                          {session.date.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                          {session.location.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                          {session.game_type.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                          {session.bb_str.toLocaleString()}
-                        </TableCell>
-                        
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                          {session.buy_in.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                          {session.cash_out.toLocaleString()}
-                        </TableCell>
-
-                        <TableCell align="right">
-                          <Button
-                            component={Link} 
-                            to={`/sessions/${session.id}`}
-                          >移動</Button>
-                          <IconButton 
-                            aria-label="delete" 
-                            color="error" // 🌟 これで赤くなります
-                            onClick={() => handleDelete(session.id)}
-                          >
+                  {sessions.map((session) => (
+                    <TableRow key={session.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                      <TableCell>{new Date(session.date).toLocaleDateString()}</TableCell>
+                      <TableCell align="right">{session.location}</TableCell>
+                      <TableCell align="right">{session.game_type}</TableCell>
+                      <TableCell align="right">{session.bb_str}</TableCell>
+                      <TableCell align="right">{session.buy_in.toLocaleString()}</TableCell>
+                      <TableCell align="right">{session.cash_out.toLocaleString()}</TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                          <Button component={Link} to={`/sessions/${session.id}`} size="small">移動</Button>
+                          <IconButton color="error" onClick={() => handleDelete(session.id)} size="small">
                             <DeleteIcon />
                           </IconButton>
-                        </TableCell>
-
-                      </TableRow>
-                    );
-                  })}
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -459,12 +499,12 @@ function PlayerDetail() {
         </Grid>
 
         <Grid size={{xs:12, md:12}}>
-          <Card sx={{p:3}}>
+          <Card sx={{p: { xs: 2, md: 3 }}}>
             <Typography variant="h4">計算</Typography>
             <Grid container spacing={2}>
 
               <Grid size={{xs:12, md:4}}>
-                <Box sx={{height:500, p:3}}>
+                <Box sx={{height:500, p: { xs: 2, md: 3 }}}>
                   <Stack spacing={2} sx={{ height: '100%'}} component="form" onSubmit={handleCalculateForm} justifyContent="space-between">
                     <Typography variant="h5">分析ツール</Typography>
 
@@ -515,10 +555,10 @@ function PlayerDetail() {
               </Grid>
 
               <Grid size={{xs:12, md:8}}>
-                <Box sx={{height:550, p: 3}}>
+                <Box sx={{p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column'}}>
                   <Stack spacing={4} sx={{ height: '100%'}}>
                     <Typography variant="h5">BB/STR収支グラフ</Typography>
-                    <Box sx={{ flexGrow: 1, minHeight: 0}}>
+                    <Box sx={{ width: '100%', aspectRatio: { xs: '1 / 1', md: '16 / 9' },  minHeight: 0,}}>
                       <ResponsiveContainer>
                         <LineChart data={bbChartData}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -539,11 +579,11 @@ function PlayerDetail() {
               </Grid>
 
               <Grid size={{xs:12}}>
-                <Box sx={{height:500, p:3}}>
+                <Box sx={{ p: { xs: 2, md: 3 } }}>
                   <Stack spacing={4} sx={{ height: '100%'}}>
                     <Typography variant="h5">分析結果</Typography>
                     <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 2, borderRadius: 2 }}>
-                      <Table sx={{ minWidth: 300 }} aria-label="session statistics table"> 
+                      <Table aria-label="session statistics table"> 
                         <TableBody>
                           {/* プレイ時間 */}
                           <TableRow>
